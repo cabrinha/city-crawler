@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import styled from 'styled-components';
 import type { Coordinate, Building } from '../types/game';
-import { CITY_SIZE, getBuildingAt, getLocationName, getStreetName, getStreetNumber, getDistanceScore } from '../data/cityData';
+import { CITY_SIZE, getBuildingAt, getLocationName, getDistanceScore } from '../data/cityData';
 
 const MapContainer = styled.div`
   width: 100%;
@@ -36,18 +36,18 @@ const Button = styled.button`
   }
 `;
 
-const InfoPanel = styled.div`
-  position: absolute;
-  top: 80px;
-  right: 20px;
-  z-index: 100;
-  background-color: rgba(0, 0, 0, 0.9);
-  color: white;
-  padding: 15px;
-  border-radius: 8px;
-  border: 1px solid #666;
-  min-width: 200px;
-`;
+// const InfoPanel = styled.div`
+//   position: absolute;
+//   top: 80px;
+//   right: 20px;
+//   z-index: 100;
+//   background-color: rgba(0, 0, 0, 0.9);
+//   color: white;
+//   padding: 15px;
+//   border-radius: 8px;
+//   border: 1px solid #666;
+//   min-width: 200px;
+// `;
 
 const PerformanceStats = styled.div`
   position: absolute;
@@ -136,8 +136,6 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   playerLocation = { x: 178, y: 150 } // Center at city block near Torment and 75th
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [selectedTile, setSelectedTile] = useState<Coordinate | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(1);
   const [renderTime, setRenderTime] = useState(0);
   const [visibleTiles, setVisibleTiles] = useState(0);
   const [isLegendVisible, setIsLegendVisible] = useState(false);
@@ -267,9 +265,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .attr('stroke', colors.grid)  // White borders like the game
       .attr('stroke-width', 0.1)
       .style('cursor', 'pointer')
-      .on('click', function(_event, d: TileData) {
-        setSelectedTile({ x: d.x, y: d.y });
-
+      .on('click', function(_event, _d: TileData) {
         // Highlight selected tile
         tiles.attr('stroke-width', 0.5);
         d3.select(this).attr('stroke', '#fff').attr('stroke-width', 2);
@@ -350,7 +346,6 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .on('zoom', (event) => {
         const { transform } = event;
         g.attr('transform', transform.toString());
-        setZoomLevel(transform.k);
 
         // Level-of-detail rendering
         const labelThreshold = 3;
@@ -413,7 +408,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
 
     // Add tooltip functionality
     tiles.on('mouseover', function(event, d: TileData) {
-      const tooltip = d3.select('body').append('div')
+      d3.select('body').append('div')
         .attr('class', 'tooltip')
         .style('position', 'absolute')
         .style('background', 'rgba(0,0,0,0.9)')
@@ -460,7 +455,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   const handleZoomIn = () => {
     const svg = d3.select(svgRef.current);
     svg.transition().duration(300).call(
-      d3.zoom<SVGSVGElement, unknown>().scaleBy as any,
+      // @ts-ignore - D3 type complexity
+      d3.zoom<SVGSVGElement, unknown>().scaleBy,
       1.5
     );
   };
@@ -468,7 +464,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   const handleZoomOut = () => {
     const svg = d3.select(svgRef.current);
     svg.transition().duration(300).call(
-      d3.zoom<SVGSVGElement, unknown>().scaleBy as any,
+      // @ts-ignore - D3 type complexity
+      d3.zoom<SVGSVGElement, unknown>().scaleBy,
       1 / 1.5
     );
   };
@@ -483,13 +480,11 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     const centerY = height / 2 - (playerLocation.y - 1) * tileSize * scale;
 
     svg.transition().duration(750).call(
-      d3.zoom<SVGSVGElement, unknown>().transform as any,
+      // @ts-ignore - D3 type complexity
+      d3.zoom<SVGSVGElement, unknown>().transform,
       d3.zoomIdentity.translate(centerX, centerY).scale(scale)
     );
   };
-
-  const selectedBuilding = selectedTile ? getBuildingAt(selectedTile.x, selectedTile.y) : null;
-  const selectedDistanceScore = selectedTile ? getDistanceScore(selectedTile.x, selectedTile.y) : 0;
 
   return (
     <MapContainer>

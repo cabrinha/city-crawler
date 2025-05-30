@@ -39,23 +39,6 @@ const GameStats = styled.div`
   align-items: center;
 `;
 
-const StatItem = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  .label {
-    font-size: 10px;
-    color: #ccc;
-    text-transform: uppercase;
-  }
-
-  .value {
-    font-weight: bold;
-    color: #fff;
-  }
-`;
-
 const GitHubLink = styled.a`
   display: flex;
   align-items: center;
