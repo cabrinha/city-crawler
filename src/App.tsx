@@ -68,9 +68,9 @@ function App() {
   return (
     <AppContainer>
       <Header>
-        <Title>Vampires! - City Crawler</Title>
+        <Title>Vespertine's City Crawler</Title>
         <GameStats>
-          <StatItem>
+          {/* <StatItem>
             <div className="label">Action Points</div>
             <div className="value">{gameState.actionPoints}/{gameState.maxActionPoints}</div>
           </StatItem>
@@ -85,7 +85,7 @@ function App() {
           <StatItem>
             <div className="label">Rank</div>
             <div className="value">{gameState.rank}</div>
-          </StatItem>
+          </StatItem> */}
         </GameStats>
       </Header>
 

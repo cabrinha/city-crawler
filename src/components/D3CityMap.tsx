@@ -140,7 +140,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   const [zoomLevel, setZoomLevel] = useState(1);
   const [renderTime, setRenderTime] = useState(0);
   const [visibleTiles, setVisibleTiles] = useState(0);
-  const [isLegendVisible, setIsLegendVisible] = useState(true);
+  const [isLegendVisible, setIsLegendVisible] = useState(false);
 
   // Define colors to match the actual game CSS from blood.css
   const colors = {
@@ -167,8 +167,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   const createGridData = useCallback((): TileData[] => {
     const data: TileData[] = [];
 
-    for (let x = 0; x < CITY_SIZE; x++) {
-      for (let y = 0; y < CITY_SIZE; y++) {
+    for (let x = 1; x <= CITY_SIZE; x++) {
+      for (let y = 1; y <= CITY_SIZE; y++) {
         const building = getBuildingAt(x, y);
         const distanceScore = getDistanceScore(x, y);
         const isPlayer = playerLocation.x === x && playerLocation.y === y;
@@ -181,15 +181,15 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         const yIsOdd = y % 2 === 1;
 
         if (xIsOdd && yIsOdd) {
-          // Intersection - both coordinates are odd
-          tileType = 'intersect';
-          streetName = getLocationName(x, y);
+          // City block - both coordinates are odd (1,1), (1,3), (3,1), etc.
+          tileType = 'city';
         } else if (xIsOdd || yIsOdd) {
-          // Street - one coordinate is odd
+          // Street - one coordinate is odd, one is even
           tileType = 'street';
         } else {
-          // City block - both coordinates are even
-          tileType = 'city';
+          // Intersection - both coordinates are even (2,2), (4,4), etc.
+          tileType = 'intersect';
+          streetName = getLocationName(x, y);
         }
 
         // Create a hashmap of tile colors based on distance score
@@ -259,8 +259,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .enter()
       .append('rect')
       .attr('class', 'tile')
-      .attr('x', (d: TileData) => d.x * tileSize)
-      .attr('y', (d: TileData) => d.y * tileSize)
+      .attr('x', (d: TileData) => (d.x - 1) * tileSize)
+      .attr('y', (d: TileData) => (d.y - 1) * tileSize)
       .attr('width', tileSize - 0.1)
       .attr('height', tileSize - 0.1)
       .attr('fill', (d: TileData) => d.tileColor)
@@ -281,8 +281,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .enter()
       .append('text')
       .attr('class', 'building-label')
-      .attr('x', (d: TileData) => d.x * tileSize + tileSize / 2)
-      .attr('y', (d: TileData) => d.y * tileSize + tileSize / 2)
+      .attr('x', (d: TileData) => (d.x - 1) * tileSize + tileSize / 2)
+      .attr('y', (d: TileData) => (d.y - 1) * tileSize + tileSize / 2)
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'middle')
       .attr('fill', 'white')
@@ -305,8 +305,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     // Add player marker
     const playerMarker = g.append('text')
       .attr('class', 'player-marker')
-      .attr('x', playerLocation.x * tileSize + tileSize / 2) // No offset needed
-      .attr('y', playerLocation.y * tileSize + tileSize / 2) // No offset needed
+      .attr('x', (playerLocation.x - 1) * tileSize + tileSize / 2)
+      .attr('y', (playerLocation.y - 1) * tileSize + tileSize / 2)
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'middle')
       .attr('fill', 'white')
@@ -320,8 +320,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .enter()
       .append('rect')
       .attr('class', 'street-sign')
-      .attr('x', (d: TileData) => d.x * tileSize + tileSize * 0.1)
-      .attr('y', (d: TileData) => d.y * tileSize + tileSize * 0.1)
+      .attr('x', (d: TileData) => (d.x - 1) * tileSize + tileSize * 0.1)
+      .attr('y', (d: TileData) => (d.y - 1) * tileSize + tileSize * 0.1)
       .attr('width', tileSize * 0.8)
       .attr('height', tileSize * 0.3)
       .attr('fill', colors.intersectSign)
@@ -333,13 +333,13 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .enter()
       .append('text')
       .attr('class', 'street-name')
-      .attr('x', (d: TileData) => d.x * tileSize + tileSize / 2)
-      .attr('y', (d: TileData) => d.y * tileSize + tileSize * 0.25)
+      .attr('x', (d: TileData) => (d.x - 1) * tileSize + tileSize / 2)
+      .attr('y', (d: TileData) => (d.y - 1) * tileSize + tileSize * 0.25)
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'middle')
       .attr('fill', 'white')
       .attr('font-size', `${tileSize * 0.25}px`)
-      .attr('font-family', 'Arial, sans-serif')
+      .attr('font-family', 'Verdana, Arial, sans-serif')
       .attr('font-weight', 'bold')
       .style('pointer-events', 'none')
       .text((d: TileData) => d.streetName || '');
@@ -363,6 +363,15 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         // Show/hide street signs and street names based on zoom level
         streetSigns.style('display', transform.k > streetSignThreshold ? 'block' : 'none');
         streetNameLabels.style('display', transform.k > streetSignThreshold ? 'block' : 'none');
+
+        // Update text scaling based on zoom level
+        const baseFontSize = tileSize * 0.25;
+        const scaledFontSize = Math.max(2, baseFontSize / Math.sqrt(transform.k));
+        streetNameLabels.attr('font-size', `${scaledFontSize}px`);
+
+        // Update building label scaling
+        const buildingFontSize = Math.max(3, (tileSize * 0.3) / Math.sqrt(transform.k));
+        buildingLabels.attr('font-size', `${buildingFontSize}px`);
 
         // Optimize stroke rendering at different zoom levels
         if (transform.k < 1) {
@@ -389,47 +398,14 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         }).length;
 
         setVisibleTiles(tilesInView);
-
-        // Add text labels for intersections and buildings
-        const labels = svg.selectAll('.label')
-          .data(gridData.filter(d => d.tileType === 'intersect' && d.streetName || d.building))
-          .enter()
-          .append('text')
-          .attr('class', 'label')
-          .attr('x', (d: TileData) => d.x * tileSize + tileSize / 2)
-          .attr('y', (d: TileData) => d.y * tileSize + tileSize / 2)
-          .attr('text-anchor', 'middle')
-          .attr('dominant-baseline', 'middle')
-          .attr('font-size', `${Math.max(1, tileSize * 0.3)}px`)
-          .attr('font-family', 'Arial, sans-serif')
-          .attr('fill', colors.text)
-          .attr('pointer-events', 'none')
-          .text((d: TileData) => {
-            if (d.isPlayer) return 'YOU';
-            if (d.tileType === 'intersect' && d.streetName) return d.streetName;
-            if (d.building) {
-              // Show building type abbreviation
-              switch (d.building.type) {
-                case 'bank': return '$';
-                case 'pub': return 'P';
-                case 'transit': return 'T';
-                case 'lair': return 'L';
-                case 'shop': return 'S';
-                default: return '';
-              }
-            }
-            return '';
-          })
-          .style('display', transform.k < 2 ? 'none' : 'block'); // Only show labels when zoomed in
       });
 
     svg.call(zoom);
 
     // Center on player initially with smooth transition
     const initialScale = 2;
-    // No offset needed since there's no border
-    const centerX = width / 2 - playerLocation.x * tileSize * initialScale;
-    const centerY = height / 2 - playerLocation.y * tileSize * initialScale;
+    const centerX = width / 2 - (playerLocation.x - 1) * tileSize * initialScale;
+    const centerY = height / 2 - (playerLocation.y - 1) * tileSize * initialScale;
 
     svg.transition()
       .duration(1000)
@@ -503,9 +479,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     const height = window.innerHeight;
     const scale = 3;
 
-    // No offset needed since there's no border
-    const centerX = width / 2 - playerLocation.x * tileSize * scale;
-    const centerY = height / 2 - playerLocation.y * tileSize * scale;
+    const centerX = width / 2 - (playerLocation.x - 1) * tileSize * scale;
+    const centerY = height / 2 - (playerLocation.y - 1) * tileSize * scale;
 
     svg.transition().duration(750).call(
       d3.zoom<SVGSVGElement, unknown>().transform as any,
@@ -525,28 +500,6 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         <Button onClick={handleZoomOut}>Zoom Out (-)</Button>
         <Button onClick={handleCenterPlayer}>Center on Player</Button>
       </Controls>
-
-      <InfoPanel>
-        <h3>City Map</h3>
-        <p><strong>Zoom:</strong> {zoomLevel.toFixed(1)}x</p>
-        <p><strong>Player:</strong> {getLocationName(playerLocation.x, playerLocation.y)}</p>
-        <p><strong>Technology:</strong> D3.js + SVG</p>
-        {selectedTile && (
-          <>
-            <p><strong>Selected:</strong> {getLocationName(selectedTile.x, selectedTile.y)} ({selectedTile.x}, {selectedTile.y})</p>
-            {selectedBuilding && (
-              <p><strong>Building:</strong> {selectedBuilding.name}</p>
-            )}
-            {selectedDistanceScore > 0 && (
-              <p style={{ color: '#00ff00' }}>
-                <strong>Distance Score:</strong> {(selectedDistanceScore * 100).toFixed(1)}%
-                <br />
-                <small>Higher scores = farther from banks</small>
-              </p>
-            )}
-          </>
-        )}
-      </InfoPanel>
 
       <PerformanceStats>
         <div><strong>Performance Stats:</strong></div>

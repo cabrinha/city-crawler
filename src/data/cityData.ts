@@ -1,4 +1,4 @@
-import type { Building, Street } from '../types/game';
+import type { Building } from '../types/game';
 
 // Street names from the official game data (from streets.html)
 // Array indices 0-99 map to game coordinates 1-100
@@ -34,204 +34,204 @@ export const BUILDINGS: Building[] = [
   // Banks from the actual game database (https://blood.pinkgothic.com/rbmlist.php?type=bank)
   // All banks are labeled "$BANK$" in the game
   // Buildings are located one square southeast of street intersections
-  { id: 'bank_1', type: 'bank', name: '$BANK$', coordinate: { x: 2, y: 164 } }, // Aardvark and 82nd
-  { id: 'bank_2', type: 'bank', name: '$BANK$', coordinate: { x: 4, y: 80 } }, // Alder and 40th
-  { id: 'bank_3', type: 'bank', name: '$BANK$', coordinate: { x: 4, y: 160 } }, // Alder and 80th
-  { id: 'bank_4', type: 'bank', name: '$BANK$', coordinate: { x: 102, y: 32 } }, // Amethyst and 16th
-  { id: 'bank_5', type: 'bank', name: '$BANK$', coordinate: { x: 102, y: 74 } }, // Amethyst and 37th
-  { id: 'bank_6', type: 'bank', name: '$BANK$', coordinate: { x: 102, y: 198 } }, // Amethyst and 99th
-  { id: 'bank_7', type: 'bank', name: '$BANK$', coordinate: { x: 104, y: 60 } }, // Anguish and 30th
-  { id: 'bank_8', type: 'bank', name: '$BANK$', coordinate: { x: 104, y: 146 } }, // Anguish and 73rd
-  { id: 'bank_9', type: 'bank', name: '$BANK$', coordinate: { x: 104, y: 182 } }, // Anguish and 91st
-  { id: 'bank_10', type: 'bank', name: '$BANK$', coordinate: { x: 8, y: 52 } }, // Beech and 26th
-  { id: 'bank_11', type: 'bank', name: '$BANK$', coordinate: { x: 8, y: 78 } }, // Beech and 39th
-  { id: 'bank_12', type: 'bank', name: '$BANK$', coordinate: { x: 106, y: 56 } }, // Beryl and 28th
-  { id: 'bank_13', type: 'bank', name: '$BANK$', coordinate: { x: 106, y: 80 } }, // Beryl and 40th
-  { id: 'bank_14', type: 'bank', name: '$BANK$', coordinate: { x: 106, y: 130 } }, // Beryl and 65th
-  { id: 'bank_15', type: 'bank', name: '$BANK$', coordinate: { x: 106, y: 144 } }, // Beryl and 72nd
-  { id: 'bank_16', type: 'bank', name: '$BANK$', coordinate: { x: 108, y: 28 } }, // Bleak and 14th
-  { id: 'bank_17', type: 'bank', name: '$BANK$', coordinate: { x: 6, y: 26 } }, // Buzzard and 13th
-  { id: 'bank_18', type: 'bank', name: '$BANK$', coordinate: { x: 12, y: 2 } }, // Cedar and 1st
-  { id: 'bank_19', type: 'bank', name: '$BANK$', coordinate: { x: 12, y: 104 } }, // Cedar and 52nd
-  { id: 'bank_20', type: 'bank', name: '$BANK$', coordinate: { x: 12, y: 160 } }, // Cedar and 80th
-  { id: 'bank_21', type: 'bank', name: '$BANK$', coordinate: { x: 112, y: 46 } }, // Chagrin and 23rd
-  { id: 'bank_22', type: 'bank', name: '$BANK$', coordinate: { x: 112, y: 78 } }, // Chagrin and 39th
-  { id: 'bank_23', type: 'bank', name: '$BANK$', coordinate: { x: 110, y: 92 } }, // Cobalt and 46th
-  { id: 'bank_24', type: 'bank', name: '$BANK$', coordinate: { x: 110, y: 162 } }, // Cobalt and 81st
-  { id: 'bank_25', type: 'bank', name: '$BANK$', coordinate: { x: 110, y: 176 } }, // Cobalt and 88th
-  { id: 'bank_26', type: 'bank', name: '$BANK$', coordinate: { x: 10, y: 186 } }, // Cormorant and 93rd
-  { id: 'bank_27', type: 'bank', name: '$BANK$', coordinate: { x: 116, y: 2 } }, // Despair and 1st
-  { id: 'bank_28', type: 'bank', name: '$BANK$', coordinate: { x: 116, y: 150 } }, // Despair and 75th
-  { id: 'bank_29', type: 'bank', name: '$BANK$', coordinate: { x: 16, y: 8 } }, // Dogwood and 4th
-  { id: 'bank_30', type: 'bank', name: '$BANK$', coordinate: { x: 14, y: 74 } }, // Duck and 37th
-  { id: 'bank_31', type: 'bank', name: '$BANK$', coordinate: { x: 14, y: 154 } }, // Duck and 77th
-  { id: 'bank_32', type: 'bank', name: '$BANK$', coordinate: { x: 18, y: 128 } }, // Eagle and 64th
-  { id: 'bank_33', type: 'bank', name: '$BANK$', coordinate: { x: 18, y: 178 } }, // Eagle and 89th
-  { id: 'bank_34', type: 'bank', name: '$BANK$', coordinate: { x: 20, y: 196 } }, // Elm and 98th
-  { id: 'bank_35', type: 'bank', name: '$BANK$', coordinate: { x: 118, y: 38 } }, // Emerald and 19th
-  { id: 'bank_36', type: 'bank', name: '$BANK$', coordinate: { x: 118, y: 180 } }, // Emerald and 90th
-  { id: 'bank_37', type: 'bank', name: '$BANK$', coordinate: { x: 120, y: 40 } }, // Ennui and 20th
-  { id: 'bank_38', type: 'bank', name: '$BANK$', coordinate: { x: 120, y: 156 } }, // Ennui and 78th
-  { id: 'bank_39', type: 'bank', name: '$BANK$', coordinate: { x: 124, y: 30 } }, // Fear and 15th
-  { id: 'bank_40', type: 'bank', name: '$BANK$', coordinate: { x: 22, y: 64 } }, // Ferret and 32nd
-  { id: 'bank_41', type: 'bank', name: '$BANK$', coordinate: { x: 22, y: 180 } }, // Ferret and 90th
-  { id: 'bank_42', type: 'bank', name: '$BANK$', coordinate: { x: 24, y: 4 } }, // Fir and 2nd
-  { id: 'bank_43', type: 'bank', name: '$BANK$', coordinate: { x: 122, y: 74 } }, // Flint and 37th
-  { id: 'bank_44', type: 'bank', name: '$BANK$', coordinate: { x: 122, y: 90 } }, // Flint and 45th
-  { id: 'bank_45', type: 'bank', name: '$BANK$', coordinate: { x: 122, y: 94 } }, // Flint and 47th
-  { id: 'bank_46', type: 'bank', name: '$BANK$', coordinate: { x: 122, y: 10 } }, // Flint and 5th
-  { id: 'bank_47', type: 'bank', name: '$BANK$', coordinate: { x: 128, y: 68 } }, // Gloom and 34th
-  { id: 'bank_48', type: 'bank', name: '$BANK$', coordinate: { x: 128, y: 142 } }, // Gloom and 71st
-  { id: 'bank_49', type: 'bank', name: '$BANK$', coordinate: { x: 128, y: 178 } }, // Gloom and 89th
-  { id: 'bank_50', type: 'bank', name: '$BANK$', coordinate: { x: 128, y: 180 } }, // Gloom and 90th
-  { id: 'bank_51', type: 'bank', name: '$BANK$', coordinate: { x: 30, y: 92 } }, // Haddock and 46th
-  { id: 'bank_52', type: 'bank', name: '$BANK$', coordinate: { x: 30, y: 104 } }, // Haddock and 52nd
-  { id: 'bank_53', type: 'bank', name: '$BANK$', coordinate: { x: 30, y: 134 } }, // Haddock and 67th
-  { id: 'bank_54', type: 'bank', name: '$BANK$', coordinate: { x: 30, y: 148 } }, // Haddock and 74th
-  { id: 'bank_55', type: 'bank', name: '$BANK$', coordinate: { x: 30, y: 176 } }, // Haddock and 88th
-  { id: 'bank_56', type: 'bank', name: '$BANK$', coordinate: { x: 130, y: 78 } }, // Hessite and 39th
-  { id: 'bank_57', type: 'bank', name: '$BANK$', coordinate: { x: 130, y: 152 } }, // Hessite and 76th
-  { id: 'bank_58', type: 'bank', name: '$BANK$', coordinate: { x: 32, y: 192 } }, // Holly and 96th
-  { id: 'bank_59', type: 'bank', name: '$BANK$', coordinate: { x: 132, y: 98 } }, // Horror and 49th
-  { id: 'bank_60', type: 'bank', name: '$BANK$', coordinate: { x: 132, y: 118 } }, // Horror and 59th
-  { id: 'bank_61', type: 'bank', name: '$BANK$', coordinate: { x: 136, y: 62 } }, // Ire and 31st
-  { id: 'bank_62', type: 'bank', name: '$BANK$', coordinate: { x: 136, y: 84 } }, // Ire and 42nd
-  { id: 'bank_63', type: 'bank', name: '$BANK$', coordinate: { x: 136, y: 106 } }, // Ire and 53rd
-  { id: 'bank_64', type: 'bank', name: '$BANK$', coordinate: { x: 136, y: 194 } }, // Ire and 97th
-  { id: 'bank_65', type: 'bank', name: '$BANK$', coordinate: { x: 134, y: 10 } }, // Ivory and 5th
-  { id: 'bank_66', type: 'bank', name: '$BANK$', coordinate: { x: 134, y: 142 } }, // Ivory and 71st
-  { id: 'bank_67', type: 'bank', name: '$BANK$', coordinate: { x: 36, y: 2 } }, // Ivy and NCL
-  { id: 'bank_68', type: 'bank', name: '$BANK$', coordinate: { x: 36, y: 140 } }, // Ivy and 70th
-  { id: 'bank_69', type: 'bank', name: '$BANK$', coordinate: { x: 36, y: 158 } }, // Ivy and 79th
-  { id: 'bank_70', type: 'bank', name: '$BANK$', coordinate: { x: 38, y: 86 } }, // Jackal and 43rd
-  { id: 'bank_71', type: 'bank', name: '$BANK$', coordinate: { x: 140, y: 50 } }, // Jaded and 25th
-  { id: 'bank_72', type: 'bank', name: '$BANK$', coordinate: { x: 140, y: 96 } }, // Jaded and 48th
-  { id: 'bank_73', type: 'bank', name: '$BANK$', coordinate: { x: 140, y: 142 } }, // Jaded and 71st
-  { id: 'bank_74', type: 'bank', name: '$BANK$', coordinate: { x: 40, y: 32 } }, // Juniper and 16th
-  { id: 'bank_75', type: 'bank', name: '$BANK$', coordinate: { x: 40, y: 40 } }, // Juniper and 20th
-  { id: 'bank_76', type: 'bank', name: '$BANK$', coordinate: { x: 40, y: 196 } }, // Juniper and 98th
-  { id: 'bank_77', type: 'bank', name: '$BANK$', coordinate: { x: 44, y: 30 } }, // Knotweed and 15th
-  { id: 'bank_78', type: 'bank', name: '$BANK$', coordinate: { x: 44, y: 58 } }, // Knotweed and 29th
-  { id: 'bank_79', type: 'bank', name: '$BANK$', coordinate: { x: 42, y: 26 } }, // Kraken and 13th
-  { id: 'bank_80', type: 'bank', name: '$BANK$', coordinate: { x: 42, y: 36 } }, // Kraken and 18th
-  { id: 'bank_81', type: 'bank', name: '$BANK$', coordinate: { x: 42, y: 6 } }, // Kraken and 3rd
-  { id: 'bank_82', type: 'bank', name: '$BANK$', coordinate: { x: 42, y: 68 } }, // Kraken and 34th
-  { id: 'bank_83', type: 'bank', name: '$BANK$', coordinate: { x: 42, y: 90 } }, // Kraken and 45th
-  { id: 'bank_84', type: 'bank', name: '$BANK$', coordinate: { x: 42, y: 96 } }, // Kraken and 48th
-  { id: 'bank_85', type: 'bank', name: '$BANK$', coordinate: { x: 42, y: 14 } }, // Kraken and 7th
-  { id: 'bank_86', type: 'bank', name: '$BANK$', coordinate: { x: 142, y: 80 } }, // Kyanite and 40th
-  { id: 'bank_87', type: 'bank', name: '$BANK$', coordinate: { x: 142, y: 12 } }, // Kyanite and 6th
-  { id: 'bank_88', type: 'bank', name: '$BANK$', coordinate: { x: 48, y: 66 } }, // Larch and 33rd
-  { id: 'bank_89', type: 'bank', name: '$BANK$', coordinate: { x: 48, y: 14 } }, // Larch and 7th
-  { id: 'bank_90', type: 'bank', name: '$BANK$', coordinate: { x: 48, y: 182 } }, // Larch and 91st
-  { id: 'bank_91', type: 'bank', name: '$BANK$', coordinate: { x: 146, y: 22 } }, // Lead and 11th
-  { id: 'bank_92', type: 'bank', name: '$BANK$', coordinate: { x: 146, y: 42 } }, // Lead and 21st
-  { id: 'bank_93', type: 'bank', name: '$BANK$', coordinate: { x: 146, y: 176 } }, // Lead and 88th
-  { id: 'bank_94', type: 'bank', name: '$BANK$', coordinate: { x: 46, y: 160 } }, // Lion and 80th
-  { id: 'bank_95', type: 'bank', name: '$BANK$', coordinate: { x: 148, y: 186 } }, // Lonely and 93rd
-  { id: 'bank_96', type: 'bank', name: '$BANK$', coordinate: { x: 150, y: 22 } }, // Malachite and 11th
-  { id: 'bank_97', type: 'bank', name: '$BANK$', coordinate: { x: 150, y: 64 } }, // Malachite and 32nd
-  { id: 'bank_98', type: 'bank', name: '$BANK$', coordinate: { x: 150, y: 174 } }, // Malachite and 87th
-  { id: 'bank_99', type: 'bank', name: '$BANK$', coordinate: { x: 152, y: 72 } }, // Malaise and 36th
-  { id: 'bank_100', type: 'bank', name: '$BANK$', coordinate: { x: 152, y: 8 } }, // Malaise and 4th
-  { id: 'bank_101', type: 'bank', name: '$BANK$', coordinate: { x: 152, y: 100 } }, // Malaise and 50th
-  { id: 'bank_102', type: 'bank', name: '$BANK$', coordinate: { x: 52, y: 68 } }, // Maple and 34th
-  { id: 'bank_103', type: 'bank', name: '$BANK$', coordinate: { x: 52, y: 168 } }, // Maple and 84th
-  { id: 'bank_104', type: 'bank', name: '$BANK$', coordinate: { x: 52, y: 170 } }, // Maple and 85th
-  { id: 'bank_105', type: 'bank', name: '$BANK$', coordinate: { x: 50, y: 156 } }, // Mongoose and 78th
-  { id: 'bank_106', type: 'bank', name: '$BANK$', coordinate: { x: 50, y: 158 } }, // Mongoose and 79th
-  { id: 'bank_107', type: 'bank', name: '$BANK$', coordinate: { x: 50, y: 182 } }, // Mongoose and 91st
-  { id: 'bank_108', type: 'bank', name: '$BANK$', coordinate: { x: 156, y: 20 } }, // Nervous and 10th
-  { id: 'bank_109', type: 'bank', name: '$BANK$', coordinate: { x: 56, y: 74 } }, // Nettle and 37th
-  { id: 'bank_110', type: 'bank', name: '$BANK$', coordinate: { x: 56, y: 134 } }, // Nettle and 67th
-  { id: 'bank_111', type: 'bank', name: '$BANK$', coordinate: { x: 154, y: 186 } }, // Nickel and 93rd
-  { id: 'bank_112', type: 'bank', name: '$BANK$', coordinate: { x: 158, y: 72 } }, // Obsidian and 36th
-  { id: 'bank_113', type: 'bank', name: '$BANK$', coordinate: { x: 158, y: 158 } }, // Obsidian and 79th
-  { id: 'bank_114', type: 'bank', name: '$BANK$', coordinate: { x: 58, y: 54 } }, // Octopus and 27th
-  { id: 'bank_115', type: 'bank', name: '$BANK$', coordinate: { x: 58, y: 142 } }, // Octopus and 71st
-  { id: 'bank_116', type: 'bank', name: '$BANK$', coordinate: { x: 58, y: 154 } }, // Octopus and 77th
-  { id: 'bank_117', type: 'bank', name: '$BANK$', coordinate: { x: 60, y: 18 } }, // Olive and 9th
-  { id: 'bank_118', type: 'bank', name: '$BANK$', coordinate: { x: 60, y: 198 } }, // Olive and 99th
-  { id: 'bank_119', type: 'bank', name: '$BANK$', coordinate: { x: 160, y: 4 } }, // Oppression and 2nd
-  { id: 'bank_120', type: 'bank', name: '$BANK$', coordinate: { x: 160, y: 178 } }, // Oppression and 89th
-  { id: 'bank_121', type: 'bank', name: '$BANK$', coordinate: { x: 164, y: 38 } }, // Pessimism and 19th
-  { id: 'bank_122', type: 'bank', name: '$BANK$', coordinate: { x: 164, y: 88 } }, // Pessimism and 44th
-  { id: 'bank_123', type: 'bank', name: '$BANK$', coordinate: { x: 164, y: 174 } }, // Pessimism and 87th
-  { id: 'bank_124', type: 'bank', name: '$BANK$', coordinate: { x: 62, y: 88 } }, // Pilchard and 44th
-  { id: 'bank_125', type: 'bank', name: '$BANK$', coordinate: { x: 62, y: 120 } }, // Pilchard and 60th
-  { id: 'bank_126', type: 'bank', name: '$BANK$', coordinate: { x: 64, y: 84 } }, // Pine and 42nd
-  { id: 'bank_127', type: 'bank', name: '$BANK$', coordinate: { x: 64, y: 88 } }, // Pine and 44th
-  { id: 'bank_128', type: 'bank', name: '$BANK$', coordinate: { x: 162, y: 22 } }, // Pyrites and 11th
-  { id: 'bank_129', type: 'bank', name: '$BANK$', coordinate: { x: 162, y: 48 } }, // Pyrites and 24th
-  { id: 'bank_130', type: 'bank', name: '$BANK$', coordinate: { x: 162, y: 180 } }, // Pyrites and 90th
-  { id: 'bank_131', type: 'bank', name: '$BANK$', coordinate: { x: 66, y: 20 } }, // Quail and 10th
-  { id: 'bank_132', type: 'bank', name: '$BANK$', coordinate: { x: 66, y: 24 } }, // Quail and 12th
-  { id: 'bank_133', type: 'bank', name: '$BANK$', coordinate: { x: 66, y: 36 } }, // Quail and 18th
-  { id: 'bank_134', type: 'bank', name: '$BANK$', coordinate: { x: 66, y: 52 } }, // Quail and 26th
-  { id: 'bank_135', type: 'bank', name: '$BANK$', coordinate: { x: 66, y: 72 } }, // Quail and 36th
-  { id: 'bank_136', type: 'bank', name: '$BANK$', coordinate: { x: 66, y: 82 } }, // Quail and 41st
-  { id: 'bank_137', type: 'bank', name: '$BANK$', coordinate: { x: 66, y: 116 } }, // Quail and 58th
-  { id: 'bank_138', type: 'bank', name: '$BANK$', coordinate: { x: 66, y: 148 } }, // Quail and 74th
-  { id: 'bank_139', type: 'bank', name: '$BANK$', coordinate: { x: 168, y: 56 } }, // Qualms and 28th
-  { id: 'bank_140', type: 'bank', name: '$BANK$', coordinate: { x: 168, y: 114 } }, // Qualms and 57th
-  { id: 'bank_141', type: 'bank', name: '$BANK$', coordinate: { x: 168, y: 150 } }, // Qualms and 75th
-  { id: 'bank_142', type: 'bank', name: '$BANK$', coordinate: { x: 166, y: 150 } }, // Quartz and 75th
-  { id: 'bank_143', type: 'bank', name: '$BANK$', coordinate: { x: 68, y: 96 } }, // Quince and 48th
-  { id: 'bank_144', type: 'bank', name: '$BANK$', coordinate: { x: 72, y: 62 } }, // Ragweed and 31st
-  { id: 'bank_145', type: 'bank', name: '$BANK$', coordinate: { x: 72, y: 112 } }, // Ragweed and 56th
-  { id: 'bank_146', type: 'bank', name: '$BANK$', coordinate: { x: 70, y: 22 } }, // Raven and 11th
-  { id: 'bank_147', type: 'bank', name: '$BANK$', coordinate: { x: 70, y: 30 } }, // Raven and 15th
-  { id: 'bank_148', type: 'bank', name: '$BANK$', coordinate: { x: 70, y: 158 } }, // Raven and 79th
-  { id: 'bank_149', type: 'bank', name: '$BANK$', coordinate: { x: 70, y: 196 } }, // Raven and 98th
-  { id: 'bank_150', type: 'bank', name: '$BANK$', coordinate: { x: 172, y: 140 } }, // Regret and 70th
-  { id: 'bank_151', type: 'bank', name: '$BANK$', coordinate: { x: 170, y: 36 } }, // Ruby and 18th
-  { id: 'bank_152', type: 'bank', name: '$BANK$', coordinate: { x: 170, y: 90 } }, // Ruby and 45th
-  { id: 'bank_153', type: 'bank', name: '$BANK$', coordinate: { x: 176, y: 96 } }, // Sorrow and 48th
-  { id: 'bank_154', type: 'bank', name: '$BANK$', coordinate: { x: 176, y: 18 } }, // Sorrow and 9th
-  { id: 'bank_155', type: 'bank', name: '$BANK$', coordinate: { x: 74, y: 20 } }, // Squid and 10th
-  { id: 'bank_156', type: 'bank', name: '$BANK$', coordinate: { x: 74, y: 48 } }, // Squid and 24th
-  { id: 'bank_157', type: 'bank', name: '$BANK$', coordinate: { x: 174, y: 62 } }, // Steel and 31st
-  { id: 'bank_158', type: 'bank', name: '$BANK$', coordinate: { x: 174, y: 128 } }, // Steel and 64th
-  { id: 'bank_159', type: 'bank', name: '$BANK$', coordinate: { x: 174, y: 14 } }, // Steel and 7th
-  { id: 'bank_160', type: 'bank', name: '$BANK$', coordinate: { x: 76, y: 32 } }, // Sycamore and 16th
-  { id: 'bank_161', type: 'bank', name: '$BANK$', coordinate: { x: 78, y: 22 } }, // Tapir and 11th
-  { id: 'bank_162', type: 'bank', name: '$BANK$', coordinate: { x: 78, y: 82 } }, // Tapir and 41st
-  { id: 'bank_163', type: 'bank', name: '$BANK$', coordinate: { x: 78, y: 2 } }, // Tapir and NCL
-  { id: 'bank_164', type: 'bank', name: '$BANK$', coordinate: { x: 80, y: 120 } }, // Teasel and 60th
-  { id: 'bank_165', type: 'bank', name: '$BANK$', coordinate: { x: 80, y: 132 } }, // Teasel and 66th
-  { id: 'bank_166', type: 'bank', name: '$BANK$', coordinate: { x: 80, y: 184 } }, // Teasel and 92nd
-  { id: 'bank_167', type: 'bank', name: '$BANK$', coordinate: { x: 180, y: 46 } }, // Torment and 23rd
-  { id: 'bank_168', type: 'bank', name: '$BANK$', coordinate: { x: 180, y: 56 } }, // Torment and 28th
-  { id: 'bank_169', type: 'bank', name: '$BANK$', coordinate: { x: 180, y: 62 } }, // Torment and 31st
-  { id: 'bank_170', type: 'bank', name: '$BANK$', coordinate: { x: 84, y: 40 } }, // Umbrella and 20th
-  { id: 'bank_171', type: 'bank', name: '$BANK$', coordinate: { x: 84, y: 160 } }, // Umbrella and 80th
-  { id: 'bank_172', type: 'bank', name: '$BANK$', coordinate: { x: 184, y: 46 } }, // Unctuous and 23rd
-  { id: 'bank_173', type: 'bank', name: '$BANK$', coordinate: { x: 184, y: 86 } }, // Unctuous and 43rd
-  { id: 'bank_174', type: 'bank', name: '$BANK$', coordinate: { x: 82, y: 22 } }, // Unicorn and 11th
-  { id: 'bank_175', type: 'bank', name: '$BANK$', coordinate: { x: 82, y: 156 } }, // Unicorn and 78th
-  { id: 'bank_176', type: 'bank', name: '$BANK$', coordinate: { x: 182, y: 2 } }, // Uranium and 1st
-  { id: 'bank_177', type: 'bank', name: '$BANK$', coordinate: { x: 182, y: 96 } }, // Uranium and 48th
-  { id: 'bank_178', type: 'bank', name: '$BANK$', coordinate: { x: 182, y: 186 } }, // Uranium and 93rd
-  { id: 'bank_179', type: 'bank', name: '$BANK$', coordinate: { x: 182, y: 194 } }, // Uranium and 97th
-  { id: 'bank_180', type: 'bank', name: '$BANK$', coordinate: { x: 186, y: 136 } }, // Vauxite and 68th
-  { id: 'bank_181', type: 'bank', name: '$BANK$', coordinate: { x: 186, y: 182 } }, // Vauxite and 91st
-  { id: 'bank_182', type: 'bank', name: '$BANK$', coordinate: { x: 188, y: 48 } }, // Vexation and 24th
-  { id: 'bank_183', type: 'bank', name: '$BANK$', coordinate: { x: 86, y: 86 } }, // Vulture and 43rd
-  { id: 'bank_184', type: 'bank', name: '$BANK$', coordinate: { x: 86, y: 164 } }, // Vulture and 82nd
-  { id: 'bank_185', type: 'bank', name: '$BANK$', coordinate: { x: 2, y: 154 } }, // WCL and 77th
-  { id: 'bank_186', type: 'bank', name: '$BANK$', coordinate: { x: 92, y: 168 } }, // Willow and 84th
-  { id: 'bank_187', type: 'bank', name: '$BANK$', coordinate: { x: 192, y: 88 } }, // Woe and 44th
-  { id: 'bank_188', type: 'bank', name: '$BANK$', coordinate: { x: 192, y: 170 } }, // Woe and 85th
-  { id: 'bank_189', type: 'bank', name: '$BANK$', coordinate: { x: 94, y: 90 } }, // Yak and 45th
-  { id: 'bank_190', type: 'bank', name: '$BANK$', coordinate: { x: 94, y: 164 } }, // Yak and 82nd
-  { id: 'bank_191', type: 'bank', name: '$BANK$', coordinate: { x: 94, y: 188 } }, // Yak and 94th
-  { id: 'bank_192', type: 'bank', name: '$BANK$', coordinate: { x: 196, y: 150 } }, // Yearning and 75th
-  { id: 'bank_193', type: 'bank', name: '$BANK$', coordinate: { x: 196, y: 186 } }, // Yearning and 93rd
-  { id: 'bank_194', type: 'bank', name: '$BANK$', coordinate: { x: 96, y: 8 } }, // Yew and 4th
-  { id: 'bank_195', type: 'bank', name: '$BANK$', coordinate: { x: 98, y: 122 } }, // Zebra and 61st
-  { id: 'bank_196', type: 'bank', name: '$BANK$', coordinate: { x: 100, y: 46 } }, // Zelkova and 23rd
-  { id: 'bank_197', type: 'bank', name: '$BANK$', coordinate: { x: 100, y: 146 } }, // Zelkova and 73rd
-  { id: 'bank_198', type: 'bank', name: '$BANK$', coordinate: { x: 198, y: 148 } }, // Zinc and 74th
+  { id: 'bank_1', type: 'bank', name: '$BANK$', coordinate: { x: 3, y: 165 } }, // Aardvark 82 Omnibank
+  { id: 'bank_2', type: 'bank', name: '$BANK$', coordinate: { x: 5, y: 81 } }, // Alder 40 Omnibank
+  { id: 'bank_3', type: 'bank', name: '$BANK$', coordinate: { x: 5, y: 161 } }, // Alder 80 Omnibank
+  { id: 'bank_4', type: 'bank', name: '$BANK$', coordinate: { x: 103, y: 33 } }, // Amethyst 16 Omnibank
+  { id: 'bank_5', type: 'bank', name: '$BANK$', coordinate: { x: 103, y: 75 } }, // Amethyst 37 Omnibank
+  { id: 'bank_6', type: 'bank', name: '$BANK$', coordinate: { x: 103, y: 199 } }, // Amethyst 99 Omnibank
+  { id: 'bank_7', type: 'bank', name: '$BANK$', coordinate: { x: 105, y: 61 } }, // Anguish 30 Omnibank
+  { id: 'bank_8', type: 'bank', name: '$BANK$', coordinate: { x: 105, y: 147 } }, // Anguish 73 Omnibank
+  { id: 'bank_9', type: 'bank', name: '$BANK$', coordinate: { x: 105, y: 183 } }, // Anguish 91 Omnibank
+  { id: 'bank_10', type: 'bank', name: '$BANK$', coordinate: { x: 9, y: 53 } }, // Beech 26 Omnibank
+  { id: 'bank_11', type: 'bank', name: '$BANK$', coordinate: { x: 9, y: 79 } }, // Beech 39 Omnibank
+  { id: 'bank_12', type: 'bank', name: '$BANK$', coordinate: { x: 107, y: 57 } }, // Beryl 28 Omnibank
+  { id: 'bank_13', type: 'bank', name: '$BANK$', coordinate: { x: 107, y: 81 } }, // Beryl 40 Omnibank
+  { id: 'bank_14', type: 'bank', name: '$BANK$', coordinate: { x: 107, y: 131 } }, // Beryl 65 Omnibank
+  { id: 'bank_15', type: 'bank', name: '$BANK$', coordinate: { x: 107, y: 145 } }, // Beryl 72 Omnibank
+  { id: 'bank_16', type: 'bank', name: '$BANK$', coordinate: { x: 109, y: 29 } }, // Bleak 14 Omnibank
+  { id: 'bank_17', type: 'bank', name: '$BANK$', coordinate: { x: 7, y: 27 } }, // Buzzard 13 Omnibank
+  { id: 'bank_18', type: 'bank', name: '$BANK$', coordinate: { x: 13, y: 3 } }, // Cedar 1 Omnibank
+  { id: 'bank_19', type: 'bank', name: '$BANK$', coordinate: { x: 13, y: 105 } }, // Cedar 52 Omnibank
+  { id: 'bank_20', type: 'bank', name: '$BANK$', coordinate: { x: 13, y: 161 } }, // Cedar 80 Omnibank
+  { id: 'bank_21', type: 'bank', name: '$BANK$', coordinate: { x: 113, y: 47 } }, // Chagrin 23 Omnibank
+  { id: 'bank_22', type: 'bank', name: '$BANK$', coordinate: { x: 113, y: 79 } }, // Chagrin 39 Omnibank
+  { id: 'bank_23', type: 'bank', name: '$BANK$', coordinate: { x: 111, y: 93 } }, // Cobalt 46 Omnibank
+  { id: 'bank_24', type: 'bank', name: '$BANK$', coordinate: { x: 111, y: 163 } }, // Cobalt 81 Omnibank
+  { id: 'bank_25', type: 'bank', name: '$BANK$', coordinate: { x: 111, y: 177 } }, // Cobalt 88 Omnibank
+  { id: 'bank_26', type: 'bank', name: '$BANK$', coordinate: { x: 11, y: 187 } }, // Cormorant 93 Omnibank
+  { id: 'bank_27', type: 'bank', name: '$BANK$', coordinate: { x: 117, y: 3 } }, // Despair 1 Omnibank
+  { id: 'bank_28', type: 'bank', name: '$BANK$', coordinate: { x: 117, y: 151 } }, // Despair 75 Omnibank
+  { id: 'bank_29', type: 'bank', name: '$BANK$', coordinate: { x: 17, y: 9 } }, // Dogwood 4 Omnibank
+  { id: 'bank_30', type: 'bank', name: '$BANK$', coordinate: { x: 15, y: 75 } }, // Duck 37 Omnibank
+  { id: 'bank_31', type: 'bank', name: '$BANK$', coordinate: { x: 15, y: 155 } }, // Duck 77 Omnibank
+  { id: 'bank_32', type: 'bank', name: '$BANK$', coordinate: { x: 19, y: 129 } }, // Eagle 64 Omnibank
+  { id: 'bank_33', type: 'bank', name: '$BANK$', coordinate: { x: 19, y: 179 } }, // Eagle 89 Omnibank
+  { id: 'bank_34', type: 'bank', name: '$BANK$', coordinate: { x: 21, y: 197 } }, // Elm 98 Omnibank
+  { id: 'bank_35', type: 'bank', name: '$BANK$', coordinate: { x: 119, y: 39 } }, // Emerald 19 Omnibank
+  { id: 'bank_36', type: 'bank', name: '$BANK$', coordinate: { x: 119, y: 181 } }, // Emerald 90 Omnibank
+  { id: 'bank_37', type: 'bank', name: '$BANK$', coordinate: { x: 121, y: 41 } }, // Ennui 20 Omnibank
+  { id: 'bank_38', type: 'bank', name: '$BANK$', coordinate: { x: 121, y: 157 } }, // Ennui 78 Omnibank
+  { id: 'bank_39', type: 'bank', name: '$BANK$', coordinate: { x: 125, y: 31 } }, // Fear 15 Omnibank
+  { id: 'bank_40', type: 'bank', name: '$BANK$', coordinate: { x: 23, y: 65 } }, // Ferret 32 Omnibank
+  { id: 'bank_41', type: 'bank', name: '$BANK$', coordinate: { x: 23, y: 181 } }, // Ferret 90 Omnibank
+  { id: 'bank_42', type: 'bank', name: '$BANK$', coordinate: { x: 25, y: 5 } }, // Fir 2 Omnibank
+  { id: 'bank_43', type: 'bank', name: '$BANK$', coordinate: { x: 123, y: 75 } }, // Flint 37 Omnibank
+  { id: 'bank_44', type: 'bank', name: '$BANK$', coordinate: { x: 123, y: 91 } }, // Flint 45 Omnibank
+  { id: 'bank_45', type: 'bank', name: '$BANK$', coordinate: { x: 123, y: 95 } }, // Flint 47 Omnibank
+  { id: 'bank_46', type: 'bank', name: '$BANK$', coordinate: { x: 123, y: 11 } }, // Flint 5 Omnibank
+  { id: 'bank_47', type: 'bank', name: '$BANK$', coordinate: { x: 129, y: 69 } }, // Gloom 34 Omnibank
+  { id: 'bank_48', type: 'bank', name: '$BANK$', coordinate: { x: 129, y: 143 } }, // Gloom 71 Omnibank
+  { id: 'bank_49', type: 'bank', name: '$BANK$', coordinate: { x: 129, y: 179 } }, // Gloom 89 Omnibank
+  { id: 'bank_50', type: 'bank', name: '$BANK$', coordinate: { x: 129, y: 181 } }, // Gloom 90 Omnibank
+  { id: 'bank_51', type: 'bank', name: '$BANK$', coordinate: { x: 31, y: 93 } }, // Haddock 46 Omnibank
+  { id: 'bank_52', type: 'bank', name: '$BANK$', coordinate: { x: 31, y: 105 } }, // Haddock 52 Omnibank
+  { id: 'bank_53', type: 'bank', name: '$BANK$', coordinate: { x: 31, y: 135 } }, // Haddock 67 Omnibank
+  { id: 'bank_54', type: 'bank', name: '$BANK$', coordinate: { x: 31, y: 149 } }, // Haddock 74 Omnibank
+  { id: 'bank_55', type: 'bank', name: '$BANK$', coordinate: { x: 31, y: 177 } }, // Haddock 88 Omnibank
+  { id: 'bank_56', type: 'bank', name: '$BANK$', coordinate: { x: 131, y: 79 } }, // Hessite 39 Omnibank
+  { id: 'bank_57', type: 'bank', name: '$BANK$', coordinate: { x: 131, y: 153 } }, // Hessite 76 Omnibank
+  { id: 'bank_58', type: 'bank', name: '$BANK$', coordinate: { x: 33, y: 193 } }, // Holly 96 Omnibank
+  { id: 'bank_59', type: 'bank', name: '$BANK$', coordinate: { x: 133, y: 99 } }, // Horror 49 Omnibank
+  { id: 'bank_60', type: 'bank', name: '$BANK$', coordinate: { x: 133, y: 119 } }, // Horror 59 Omnibank
+  { id: 'bank_61', type: 'bank', name: '$BANK$', coordinate: { x: 137, y: 63 } }, // Ire 31 Omnibank
+  { id: 'bank_62', type: 'bank', name: '$BANK$', coordinate: { x: 137, y: 85 } }, // Ire 42 Omnibank
+  { id: 'bank_63', type: 'bank', name: '$BANK$', coordinate: { x: 137, y: 107 } }, // Ire 53 Omnibank
+  { id: 'bank_64', type: 'bank', name: '$BANK$', coordinate: { x: 137, y: 195 } }, // Ire 97 Omnibank
+  { id: 'bank_65', type: 'bank', name: '$BANK$', coordinate: { x: 135, y: 11 } }, // Ivory 5 Omnibank
+  { id: 'bank_66', type: 'bank', name: '$BANK$', coordinate: { x: 135, y: 143 } }, // Ivory 71 Omnibank
+  { id: 'bank_67', type: 'bank', name: '$BANK$', coordinate: { x: 37, y: 1 } }, // Ivy 0 Omnibank
+  { id: 'bank_68', type: 'bank', name: '$BANK$', coordinate: { x: 37, y: 141 } }, // Ivy 70 Omnibank
+  { id: 'bank_69', type: 'bank', name: '$BANK$', coordinate: { x: 37, y: 159 } }, // Ivy 79 Omnibank
+  { id: 'bank_70', type: 'bank', name: '$BANK$', coordinate: { x: 39, y: 87 } }, // Jackal 43 Omnibank
+  { id: 'bank_71', type: 'bank', name: '$BANK$', coordinate: { x: 141, y: 51 } }, // Jaded 25 Omnibank
+  { id: 'bank_72', type: 'bank', name: '$BANK$', coordinate: { x: 141, y: 97 } }, // Jaded 48 Omnibank
+  { id: 'bank_73', type: 'bank', name: '$BANK$', coordinate: { x: 141, y: 143 } }, // Jaded 71 Omnibank
+  { id: 'bank_74', type: 'bank', name: '$BANK$', coordinate: { x: 41, y: 33 } }, // Juniper 16 Omnibank
+  { id: 'bank_75', type: 'bank', name: '$BANK$', coordinate: { x: 41, y: 41 } }, // Juniper 20 Omnibank
+  { id: 'bank_76', type: 'bank', name: '$BANK$', coordinate: { x: 41, y: 197 } }, // Juniper 98 Omnibank
+  { id: 'bank_77', type: 'bank', name: '$BANK$', coordinate: { x: 45, y: 31 } }, // Knotweed 15 Omnibank
+  { id: 'bank_78', type: 'bank', name: '$BANK$', coordinate: { x: 45, y: 59 } }, // Knotweed 29 Omnibank
+  { id: 'bank_79', type: 'bank', name: '$BANK$', coordinate: { x: 43, y: 27 } }, // Kraken 13 Omnibank
+  { id: 'bank_80', type: 'bank', name: '$BANK$', coordinate: { x: 43, y: 37 } }, // Kraken 18 Omnibank
+  { id: 'bank_81', type: 'bank', name: '$BANK$', coordinate: { x: 43, y: 7 } }, // Kraken 3 Omnibank
+  { id: 'bank_82', type: 'bank', name: '$BANK$', coordinate: { x: 43, y: 69 } }, // Kraken 34 Omnibank
+  { id: 'bank_83', type: 'bank', name: '$BANK$', coordinate: { x: 43, y: 91 } }, // Kraken 45 Omnibank
+  { id: 'bank_84', type: 'bank', name: '$BANK$', coordinate: { x: 43, y: 97 } }, // Kraken 48 Omnibank
+  { id: 'bank_85', type: 'bank', name: '$BANK$', coordinate: { x: 43, y: 15 } }, // Kraken 7 Omnibank
+  { id: 'bank_86', type: 'bank', name: '$BANK$', coordinate: { x: 143, y: 81 } }, // Kyanite 40 Omnibank
+  { id: 'bank_87', type: 'bank', name: '$BANK$', coordinate: { x: 143, y: 13 } }, // Kyanite 6 Omnibank
+  { id: 'bank_88', type: 'bank', name: '$BANK$', coordinate: { x: 49, y: 67 } }, // Larch 33 Omnibank
+  { id: 'bank_89', type: 'bank', name: '$BANK$', coordinate: { x: 49, y: 15 } }, // Larch 7 Omnibank
+  { id: 'bank_90', type: 'bank', name: '$BANK$', coordinate: { x: 49, y: 183 } }, // Larch 91 Omnibank
+  { id: 'bank_91', type: 'bank', name: '$BANK$', coordinate: { x: 147, y: 23 } }, // Lead 11 Omnibank
+  { id: 'bank_92', type: 'bank', name: '$BANK$', coordinate: { x: 147, y: 43 } }, // Lead 21 Omnibank
+  { id: 'bank_93', type: 'bank', name: '$BANK$', coordinate: { x: 147, y: 177 } }, // Lead 88 Omnibank
+  { id: 'bank_94', type: 'bank', name: '$BANK$', coordinate: { x: 47, y: 161 } }, // Lion 80 Omnibank
+  { id: 'bank_95', type: 'bank', name: '$BANK$', coordinate: { x: 149, y: 187 } }, // Lonely 93 Omnibank
+  { id: 'bank_96', type: 'bank', name: '$BANK$', coordinate: { x: 151, y: 23 } }, // Malachite 11 Omnibank
+  { id: 'bank_97', type: 'bank', name: '$BANK$', coordinate: { x: 151, y: 65 } }, // Malachite 32 Omnibank
+  { id: 'bank_98', type: 'bank', name: '$BANK$', coordinate: { x: 151, y: 175 } }, // Malachite 87 Omnibank
+  { id: 'bank_99', type: 'bank', name: '$BANK$', coordinate: { x: 153, y: 73 } }, // Malaise 36 Omnibank
+  { id: 'bank_100', type: 'bank', name: '$BANK$', coordinate: { x: 153, y: 9 } }, // Malaise 4 Omnibank
+  { id: 'bank_101', type: 'bank', name: '$BANK$', coordinate: { x: 153, y: 101 } }, // Malaise 50 Omnibank
+  { id: 'bank_102', type: 'bank', name: '$BANK$', coordinate: { x: 53, y: 69 } }, // Maple 34 Omnibank
+  { id: 'bank_103', type: 'bank', name: '$BANK$', coordinate: { x: 53, y: 169 } }, // Maple 84 Omnibank
+  { id: 'bank_104', type: 'bank', name: '$BANK$', coordinate: { x: 53, y: 171 } }, // Maple 85 Omnibank
+  { id: 'bank_105', type: 'bank', name: '$BANK$', coordinate: { x: 51, y: 157 } }, // Mongoose 78 Omnibank
+  { id: 'bank_106', type: 'bank', name: '$BANK$', coordinate: { x: 51, y: 159 } }, // Mongoose 79 Omnibank
+  { id: 'bank_107', type: 'bank', name: '$BANK$', coordinate: { x: 51, y: 183 } }, // Mongoose 91 Omnibank
+  { id: 'bank_108', type: 'bank', name: '$BANK$', coordinate: { x: 157, y: 21 } }, // Nervous 10 Omnibank
+  { id: 'bank_109', type: 'bank', name: '$BANK$', coordinate: { x: 57, y: 75 } }, // Nettle 37 Omnibank
+  { id: 'bank_110', type: 'bank', name: '$BANK$', coordinate: { x: 57, y: 135 } }, // Nettle 67 Omnibank
+  { id: 'bank_111', type: 'bank', name: '$BANK$', coordinate: { x: 155, y: 187 } }, // Nickel 93 Omnibank
+  { id: 'bank_112', type: 'bank', name: '$BANK$', coordinate: { x: 159, y: 73 } }, // Obsidian 36 Omnibank
+  { id: 'bank_113', type: 'bank', name: '$BANK$', coordinate: { x: 159, y: 159 } }, // Obsidian 79 Omnibank
+  { id: 'bank_114', type: 'bank', name: '$BANK$', coordinate: { x: 59, y: 55 } }, // Octopus 27 Omnibank
+  { id: 'bank_115', type: 'bank', name: '$BANK$', coordinate: { x: 59, y: 143 } }, // Octopus 71 Omnibank
+  { id: 'bank_116', type: 'bank', name: '$BANK$', coordinate: { x: 59, y: 155 } }, // Octopus 77 Omnibank
+  { id: 'bank_117', type: 'bank', name: '$BANK$', coordinate: { x: 61, y: 19 } }, // Olive 9 Omnibank
+  { id: 'bank_118', type: 'bank', name: '$BANK$', coordinate: { x: 61, y: 199 } }, // Olive 99 Omnibank
+  { id: 'bank_119', type: 'bank', name: '$BANK$', coordinate: { x: 161, y: 5 } }, // Oppression 2 Omnibank
+  { id: 'bank_120', type: 'bank', name: '$BANK$', coordinate: { x: 161, y: 179 } }, // Oppression 89 Omnibank
+  { id: 'bank_121', type: 'bank', name: '$BANK$', coordinate: { x: 165, y: 39 } }, // Pessimism 19 Omnibank
+  { id: 'bank_122', type: 'bank', name: '$BANK$', coordinate: { x: 165, y: 89 } }, // Pessimism 44 Omnibank
+  { id: 'bank_123', type: 'bank', name: '$BANK$', coordinate: { x: 165, y: 175 } }, // Pessimism 87 Omnibank
+  { id: 'bank_124', type: 'bank', name: '$BANK$', coordinate: { x: 63, y: 89 } }, // Pilchard 44 Omnibank
+  { id: 'bank_125', type: 'bank', name: '$BANK$', coordinate: { x: 63, y: 121 } }, // Pilchard 60 Omnibank
+  { id: 'bank_126', type: 'bank', name: '$BANK$', coordinate: { x: 65, y: 85 } }, // Pine 42 Omnibank
+  { id: 'bank_127', type: 'bank', name: '$BANK$', coordinate: { x: 65, y: 89 } }, // Pine 44 Omnibank
+  { id: 'bank_128', type: 'bank', name: '$BANK$', coordinate: { x: 163, y: 23 } }, // Pyrites 11 Omnibank
+  { id: 'bank_129', type: 'bank', name: '$BANK$', coordinate: { x: 163, y: 49 } }, // Pyrites 24 Omnibank
+  { id: 'bank_130', type: 'bank', name: '$BANK$', coordinate: { x: 163, y: 181 } }, // Pyrites 90 Omnibank
+  { id: 'bank_131', type: 'bank', name: '$BANK$', coordinate: { x: 67, y: 21 } }, // Quail 10 Omnibank
+  { id: 'bank_132', type: 'bank', name: '$BANK$', coordinate: { x: 67, y: 25 } }, // Quail 12 Omnibank
+  { id: 'bank_133', type: 'bank', name: '$BANK$', coordinate: { x: 67, y: 37 } }, // Quail 18 Omnibank
+  { id: 'bank_134', type: 'bank', name: '$BANK$', coordinate: { x: 67, y: 53 } }, // Quail 26 Omnibank
+  { id: 'bank_135', type: 'bank', name: '$BANK$', coordinate: { x: 67, y: 73 } }, // Quail 36 Omnibank
+  { id: 'bank_136', type: 'bank', name: '$BANK$', coordinate: { x: 67, y: 83 } }, // Quail 41 Omnibank
+  { id: 'bank_137', type: 'bank', name: '$BANK$', coordinate: { x: 67, y: 117 } }, // Quail 58 Omnibank
+  { id: 'bank_138', type: 'bank', name: '$BANK$', coordinate: { x: 67, y: 149 } }, // Quail 74 Omnibank
+  { id: 'bank_139', type: 'bank', name: '$BANK$', coordinate: { x: 169, y: 57 } }, // Qualms 28 Omnibank
+  { id: 'bank_140', type: 'bank', name: '$BANK$', coordinate: { x: 169, y: 115 } }, // Qualms 57 Omnibank
+  { id: 'bank_141', type: 'bank', name: '$BANK$', coordinate: { x: 169, y: 151 } }, // Qualms 75 Omnibank
+  { id: 'bank_142', type: 'bank', name: '$BANK$', coordinate: { x: 167, y: 151 } }, // Quartz 75 Omnibank
+  { id: 'bank_143', type: 'bank', name: '$BANK$', coordinate: { x: 69, y: 97 } }, // Quince 48 Omnibank
+  { id: 'bank_144', type: 'bank', name: '$BANK$', coordinate: { x: 73, y: 63 } }, // Ragweed 31 Omnibank
+  { id: 'bank_145', type: 'bank', name: '$BANK$', coordinate: { x: 73, y: 113 } }, // Ragweed 56 Omnibank
+  { id: 'bank_146', type: 'bank', name: '$BANK$', coordinate: { x: 71, y: 23 } }, // Raven 11 Omnibank
+  { id: 'bank_147', type: 'bank', name: '$BANK$', coordinate: { x: 71, y: 31 } }, // Raven 15 Omnibank
+  { id: 'bank_148', type: 'bank', name: '$BANK$', coordinate: { x: 71, y: 159 } }, // Raven 79 Omnibank
+  { id: 'bank_149', type: 'bank', name: '$BANK$', coordinate: { x: 71, y: 197 } }, // Raven 98 Omnibank
+  { id: 'bank_150', type: 'bank', name: '$BANK$', coordinate: { x: 173, y: 141 } }, // Regret 70 Omnibank
+  { id: 'bank_151', type: 'bank', name: '$BANK$', coordinate: { x: 171, y: 37 } }, // Ruby 18 Omnibank
+  { id: 'bank_152', type: 'bank', name: '$BANK$', coordinate: { x: 171, y: 91 } }, // Ruby 45 Omnibank
+  { id: 'bank_153', type: 'bank', name: '$BANK$', coordinate: { x: 177, y: 97 } }, // Sorrow 48 Omnibank
+  { id: 'bank_154', type: 'bank', name: '$BANK$', coordinate: { x: 177, y: 19 } }, // Sorrow 9 Omnibank
+  { id: 'bank_155', type: 'bank', name: '$BANK$', coordinate: { x: 75, y: 21 } }, // Squid 10 Omnibank
+  { id: 'bank_156', type: 'bank', name: '$BANK$', coordinate: { x: 75, y: 49 } }, // Squid 24 Omnibank
+  { id: 'bank_157', type: 'bank', name: '$BANK$', coordinate: { x: 175, y: 63 } }, // Steel 31 Omnibank
+  { id: 'bank_158', type: 'bank', name: '$BANK$', coordinate: { x: 175, y: 129 } }, // Steel 64 Omnibank
+  { id: 'bank_159', type: 'bank', name: '$BANK$', coordinate: { x: 175, y: 15 } }, // Steel 7 Omnibank
+  { id: 'bank_160', type: 'bank', name: '$BANK$', coordinate: { x: 77, y: 33 } }, // Sycamore 16 Omnibank
+  { id: 'bank_161', type: 'bank', name: '$BANK$', coordinate: { x: 79, y: 23 } }, // Tapir 11 Omnibank
+  { id: 'bank_162', type: 'bank', name: '$BANK$', coordinate: { x: 79, y: 83 } }, // Tapir 41 Omnibank
+  { id: 'bank_163', type: 'bank', name: '$BANK$', coordinate: { x: 79, y: 1 } }, // Tapir Northern Omnibank
+  { id: 'bank_164', type: 'bank', name: '$BANK$', coordinate: { x: 81, y: 121 } }, // Teasel 60 Omnibank
+  { id: 'bank_165', type: 'bank', name: '$BANK$', coordinate: { x: 81, y: 133 } }, // Teasel 66 Omnibank
+  { id: 'bank_166', type: 'bank', name: '$BANK$', coordinate: { x: 81, y: 185 } }, // Teasel 92 Omnibank
+  { id: 'bank_167', type: 'bank', name: '$BANK$', coordinate: { x: 181, y: 47 } }, // Torment 23 Omnibank
+  { id: 'bank_168', type: 'bank', name: '$BANK$', coordinate: { x: 181, y: 57 } }, // Torment 28 Omnibank
+  { id: 'bank_169', type: 'bank', name: '$BANK$', coordinate: { x: 181, y: 63 } }, // Torment 31 Omnibank
+  { id: 'bank_170', type: 'bank', name: '$BANK$', coordinate: { x: 85, y: 41 } }, // Umbrella 20 Omnibank
+  { id: 'bank_171', type: 'bank', name: '$BANK$', coordinate: { x: 85, y: 161 } }, // Umbrella 80 Omnibank
+  { id: 'bank_172', type: 'bank', name: '$BANK$', coordinate: { x: 185, y: 47 } }, // Unctuous 23 Omnibank
+  { id: 'bank_173', type: 'bank', name: '$BANK$', coordinate: { x: 185, y: 87 } }, // Unctuous 43 Omnibank
+  { id: 'bank_174', type: 'bank', name: '$BANK$', coordinate: { x: 83, y: 23 } }, // Unicorn 11 Omnibank
+  { id: 'bank_175', type: 'bank', name: '$BANK$', coordinate: { x: 83, y: 157 } }, // Unicorn 78 Omnibank
+  { id: 'bank_176', type: 'bank', name: '$BANK$', coordinate: { x: 183, y: 3 } }, // Uranium 1 Omnibank
+  { id: 'bank_177', type: 'bank', name: '$BANK$', coordinate: { x: 183, y: 97 } }, // Uranium 48 Omnibank
+  { id: 'bank_178', type: 'bank', name: '$BANK$', coordinate: { x: 183, y: 187 } }, // Uranium 93 Omnibank
+  { id: 'bank_179', type: 'bank', name: '$BANK$', coordinate: { x: 183, y: 195 } }, // Uranium 97 Omnibank
+  { id: 'bank_180', type: 'bank', name: '$BANK$', coordinate: { x: 187, y: 137 } }, // Vauxite 68 Omnibank
+  { id: 'bank_181', type: 'bank', name: '$BANK$', coordinate: { x: 187, y: 183 } }, // Vauxite 91 Omnibank
+  { id: 'bank_182', type: 'bank', name: '$BANK$', coordinate: { x: 189, y: 49 } }, // Vexation 24 Omnibank
+  { id: 'bank_183', type: 'bank', name: '$BANK$', coordinate: { x: 87, y: 87 } }, // Vulture 43 Omnibank
+  { id: 'bank_184', type: 'bank', name: '$BANK$', coordinate: { x: 87, y: 165 } }, // Vulture 82 Omnibank
+  { id: 'bank_185', type: 'bank', name: '$BANK$', coordinate: { x: 1, y: 155 } }, // Western 77 Omnibank
+  { id: 'bank_186', type: 'bank', name: '$BANK$', coordinate: { x: 93, y: 169 } }, // Willow 84 Omnibank
+  { id: 'bank_187', type: 'bank', name: '$BANK$', coordinate: { x: 193, y: 89 } }, // Woe 44 Omnibank
+  { id: 'bank_188', type: 'bank', name: '$BANK$', coordinate: { x: 193, y: 171 } }, // Woe 85 Omnibank
+  { id: 'bank_189', type: 'bank', name: '$BANK$', coordinate: { x: 95, y: 91 } }, // Yak 45 Omnibank
+  { id: 'bank_190', type: 'bank', name: '$BANK$', coordinate: { x: 95, y: 165 } }, // Yak 82 Omnibank
+  { id: 'bank_191', type: 'bank', name: '$BANK$', coordinate: { x: 95, y: 189 } }, // Yak 94 Omnibank
+  { id: 'bank_192', type: 'bank', name: '$BANK$', coordinate: { x: 197, y: 151 } }, // Yearning 75 Omnibank
+  { id: 'bank_193', type: 'bank', name: '$BANK$', coordinate: { x: 197, y: 187 } }, // Yearning 93 Omnibank
+  { id: 'bank_194', type: 'bank', name: '$BANK$', coordinate: { x: 97, y: 9 } }, // Yew 4 Omnibank
+  { id: 'bank_195', type: 'bank', name: '$BANK$', coordinate: { x: 99, y: 123 } }, // Zebra 61 Omnibank
+  { id: 'bank_196', type: 'bank', name: '$BANK$', coordinate: { x: 101, y: 47 } }, // Zelkova 23 Omnibank
+  { id: 'bank_197', type: 'bank', name: '$BANK$', coordinate: { x: 101, y: 147 } }, // Zelkova 73 Omnibank
+  { id: 'bank_198', type: 'bank', name: '$BANK$', coordinate: { x: 199, y: 149 } }, // Zinc 74 Omnibank
 
   // Pubs from the actual game database (https://blood.pinkgothic.com/rbmlist.php?type=pub)
   { id: 'pub_1', type: 'pub', name: 'Abbot\'s Tavern', coordinate: { x: 18, y: 70 } }, // Gum and 33rd
@@ -449,30 +449,48 @@ export const BUILDINGS: Building[] = [
 export const CITY_SIZE = 200; // 200x200 grid without border
 
 export function getStreetNumber(index: number): string {
-  // Handle city limits
-  if (index <= 1) return 'NCL'; // Northern City Limit
-  if (index >= 200) return 'SCL'; // Southern City Limit
-
-  // Street numbers start at coordinate 2 (1st Street = coordinates 2-3, 2nd Street = coordinates 4-5, etc.)
-  const streetNum = Math.floor((index - 2) / 2) + 1;
-  if (streetNum < 1 || streetNum > 100) return 'Unknown';
-  return `${streetNum}${streetNum === 1 ? 'st' : streetNum === 2 ? 'nd' : streetNum === 3 ? 'rd' : 'th'} Street`;
+  // Street numbers: coordinates 2-3 = 1st Street, 4-5 = 2nd Street, ..., 200-201 = 100th Street
+  // But we only go up to 200, so coordinate 200 = 100th Street
+  const streetNum = Math.floor((index + 1) / 2);
+  if (streetNum < 1) {
+    return "Northern City Limits";
+  }
+  // if (streetNum < 1 || streetNum > 100) return 'Unknown';
+  return `${streetNum}${streetNum === 1 ? 'st' : streetNum === 2 ? 'nd' : streetNum === 3 ? 'rd' : 'th'}`;
 }
 
 export function getStreetName(index: number): string {
-  // Handle city limits
-  if (index <= 1) return 'WCL'; // Western City Limit
-  if (index >= 200) return 'ECL'; // Eastern City Limit
-
-  // Street names start at coordinate 2 (each street covers 2 coordinates in the 200x200 grid)
-  const streetIndex = Math.floor((index - 2) / 2);
-  if (streetIndex < 0 || streetIndex >= 100) return 'Unknown';
+  // Street names: coordinates 2-3 = Aardvark, 4-5 = Alder, ..., 200-201 = Zestless
+  // But we only go up to 200, so coordinate 200 = Zestless
+  const streetIndex = Math.floor((index + 1) / 2) - 1;
+  if (streetIndex < 0) {
+    return "Western City Limits";
+  }
   return STREET_NAMES[streetIndex];
 }
 
 export function getLocationName(x: number, y: number): string {
   const streetName = getStreetName(x);     // X = named streets (east-west)
   const streetNumber = getStreetNumber(y); // Y = numbered streets (north-south)
+
+  // Check if this is an intersection (even coordinates) or building location (odd coordinates)
+  const isIntersection = (x % 2 === 0) && (y % 2 === 0);
+  const isBuildingLocation = (x % 2 === 1) && (y % 2 === 1);
+
+  if (isIntersection) {
+    // This is an intersection
+    return `${streetName} & ${streetNumber}`;
+  }
+
+  if (isBuildingLocation) {
+    // This is a building location - described as being "at" the intersection it's southeast of
+    // Building at (x,y) is southeast of intersection at (x-1,y-1)
+    const intersectionStreetName = getStreetName(x - 1);
+    const intersectionStreetNumber = getStreetNumber(y - 1);
+    return `${intersectionStreetName} & ${intersectionStreetNumber}`;
+  }
+
+  // This is a street (mixed even/odd coordinates)
   return `${streetName} & ${streetNumber}`;
 }
 
