@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import styled from 'styled-components';
 import type { Coordinate, Building } from '../types/game';
-import { CITY_SIZE, getBuildingAt, getLocationName, getDistanceScore } from '../data/cityData';
+import { CITY_SIZE, getBuildingAt, getLocationName, getDistanceScore, BUILDINGS, STREET_NAMES, getStreetName, getStreetNumber } from '../data/cityData';
 
 const MapContainer = styled.div`
   width: 100%;
@@ -20,6 +20,148 @@ const Controls = styled.div`
   display: flex;
   flex-direction: column;
   gap: 10px;
+`;
+
+const PlayerLocationWidget = styled.div`
+  position: absolute;
+  top: 220px;
+  left: 20px;
+  z-index: 100;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #666;
+  width: 200px;
+`;
+
+const NearestBuildingsWidget = styled.div`
+  position: absolute;
+  top: 80px;
+  right: 20px;
+  z-index: 100;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: white;
+  border-radius: 8px;
+  border: 1px solid #666;
+  min-width: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+`;
+
+const WidgetHeader = styled.div<{ $isVisible: boolean }>`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-bottom: ${props => props.$isVisible ? '1px solid #666' : 'none'};
+  cursor: pointer;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  h3 {
+    margin: 0;
+    fontSize: 14px;
+  }
+
+  &::after {
+    content: '${props => props.$isVisible ? '▼' : '▶'}';
+    font-size: 12px;
+    color: #ccc;
+  }
+`;
+
+const WidgetContent = styled.div<{ $isVisible: boolean }>`
+  padding: ${props => props.$isVisible ? '15px' : '0'};
+  max-height: ${props => props.$isVisible ? '400px' : '0'};
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+`;
+
+const InputGroup = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+`;
+
+/* const Input = styled.input`
+  width: 60px;
+  padding: 5px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border: 1px solid #666;
+  border-radius: 4px;
+  text-align: center;
+
+  &:focus {
+    outline: none;
+    border-color: #999;
+  }
+`; */
+
+const Select = styled.select`
+  padding: 5px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border: 1px solid #666;
+  border-radius: 4px;
+  flex: 1;
+
+  &:focus {
+    outline: none;
+    border-color: #999;
+  }
+
+  option {
+    background-color: #000;
+    color: white;
+  }
+`;
+
+const Label = styled.label`
+  font-size: 12px;
+  color: #ccc;
+  min-width: 20px;
+`;
+
+const CurrentLocationText = styled.div`
+  margin-top: 10px;
+  font-size: 12px;
+  color: #ccc;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  line-height: 1.3;
+`;
+
+const BuildingList = styled.div`
+  margin-bottom: 15px;
+`;
+
+const BuildingItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid #444;
+  font-size: 12px;
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const BuildingName = styled.span`
+  flex: 1;
+  margin-right: 10px;
+`;
+
+const Distance = styled.span`
+  color: #00ff00;
+  font-weight: bold;
 `;
 
 const Button = styled.button`
@@ -62,60 +204,6 @@ const PerformanceStats = styled.div`
   font-size: 12px;
 `;
 
-const Legend = styled.div`
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  z-index: 100;
-  background-color: rgba(0, 0, 0, 0.9);
-  color: white;
-  border-radius: 8px;
-  border: 1px solid #666;
-  font-size: 12px;
-  min-width: 200px;
-`;
-
-const LegendHeader = styled.div<{ $isVisible: boolean }>`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px;
-  border-bottom: ${props => props.$isVisible ? '1px solid #666' : 'none'};
-  cursor: pointer;
-
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-`;
-
-const LegendContent = styled.div<{ $isVisible: boolean }>`
-  padding: ${props => props.$isVisible ? '15px' : '0'};
-  max-height: ${props => props.$isVisible ? '400px' : '0'};
-  overflow: hidden;
-  transition: max-height 0.3s ease, padding 0.3s ease;
-`;
-
-const ToggleButton = styled.span`
-  font-size: 14px;
-  font-weight: bold;
-  user-select: none;
-`;
-
-const LegendItem = styled.div<{ $color: string }>`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 5px;
-
-  &::before {
-    content: '';
-    width: 16px;
-    height: 16px;
-    background-color: ${props => props.$color};
-    border: 1px solid #333;
-  }
-`;
-
 interface TileData {
   x: number;
   y: number;
@@ -130,15 +218,75 @@ interface TileData {
 
 interface D3CityMapProps {
   playerLocation?: Coordinate;
+  onPlayerLocationChange?: (location: Coordinate) => void;
 }
 
+// Utility function to calculate Manhattan distance
+const calculateDistance = (a: Coordinate, b: Coordinate): number => {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+};
+
+// Utility function to find nearest buildings of a specific type
+const findNearestBuildings = (playerLocation: Coordinate, buildingType: string): (Building & { distance: number })[] => {
+  const buildings = BUILDINGS.filter((b: Building) => b.type === buildingType);
+  return buildings
+    .map((building: Building) => ({
+      ...building,
+      distance: calculateDistance(playerLocation, building.coordinate)
+    }))
+    .sort((a: Building & { distance: number }, b: Building & { distance: number }) => a.distance - b.distance)
+    .slice(0, 3); // Return top 3 nearest
+};
+
 export const D3CityMap: React.FC<D3CityMapProps> = ({
-  playerLocation = { x: 178, y: 150 } // Center at city block near Torment and 75th
+  playerLocation = { x: 178, y: 150 }, // Center at city block near Torment and 75th
+  onPlayerLocationChange
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const [renderTime, setRenderTime] = useState(0);
   const [visibleTiles, setVisibleTiles] = useState(0);
-  const [isLegendVisible, setIsLegendVisible] = useState(false);
+  const [isNearestBuildingsVisible, setIsNearestBuildingsVisible] = useState(true);
+
+  const [selectedStreetName, setSelectedStreetName] = useState(getStreetName(playerLocation.x));
+  const [selectedStreetNumber, setSelectedStreetNumber] = useState(getStreetNumber(playerLocation.y));
+
+  // Helper function to convert street name to coordinate
+  const streetNameToCoordinate = (streetName: string): number => {
+    if (streetName === "Western City Limits") return 1;
+    const index = STREET_NAMES.indexOf(streetName);
+    if (index === -1) return 1;
+    return index * 2 + 2; // Aardvark (index 0) maps to X=2, Alder (index 1) maps to X=4, etc.
+  };
+
+  // Helper function to convert street number to coordinate
+  const streetNumberToCoordinate = (streetNumber: string): number => {
+    if (streetNumber === "Northern City Limits") return 1;
+    const match = streetNumber.match(/(\d+)/);
+    if (!match) return 1;
+    const num = Number.parseInt(match[1]);
+    return (num - 1) * 2 + 2; // 1st maps to Y=2, 2nd maps to Y=4, etc.
+  };
+
+  // Calculate nearest buildings
+  const nearestBanks = findNearestBuildings(playerLocation, 'bank');
+  const nearestPubs = findNearestBuildings(playerLocation, 'pub');
+  const nearestTransit = findNearestBuildings(playerLocation, 'transit');
+
+  const handlePlayerLocationUpdate = () => {
+    const x = streetNameToCoordinate(selectedStreetName);
+    const y = streetNumberToCoordinate(selectedStreetNumber);
+
+    if (x >= 1 && x <= CITY_SIZE && y >= 1 && y <= CITY_SIZE && onPlayerLocationChange) {
+      onPlayerLocationChange({ x, y });
+    }
+  };
+
+  // Update street selections when playerLocation prop changes
+  useEffect(() => {
+    setSelectedStreetName(getStreetName(playerLocation.x));
+    setSelectedStreetNumber(getStreetNumber(playerLocation.y));
+  }, [playerLocation.x, playerLocation.y]);
 
   // Define colors to match the actual game CSS from blood.css
   const colors = {
@@ -395,6 +543,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         setVisibleTiles(tilesInView);
       });
 
+    // Store zoom behavior in ref for use by control buttons
+    zoomBehaviorRef.current = zoom;
     svg.call(zoom);
 
     // Center on player initially with smooth transition
@@ -453,24 +603,25 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   }, [playerLocation, createGridData]);
 
   const handleZoomIn = () => {
+    if (!svgRef.current || !zoomBehaviorRef.current) return;
     const svg = d3.select(svgRef.current);
     svg.transition().duration(300).call(
-      // @ts-ignore - D3 type complexity
-      d3.zoom<SVGSVGElement, unknown>().scaleBy,
+      zoomBehaviorRef.current.scaleBy,
       1.5
     );
   };
 
   const handleZoomOut = () => {
+    if (!svgRef.current || !zoomBehaviorRef.current) return;
     const svg = d3.select(svgRef.current);
     svg.transition().duration(300).call(
-      // @ts-ignore - D3 type complexity
-      d3.zoom<SVGSVGElement, unknown>().scaleBy,
+      zoomBehaviorRef.current.scaleBy,
       1 / 1.5
     );
   };
 
   const handleCenterPlayer = () => {
+    if (!svgRef.current || !zoomBehaviorRef.current) return;
     const svg = d3.select(svgRef.current);
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -480,8 +631,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     const centerY = height / 2 - (playerLocation.y - 1) * tileSize * scale;
 
     svg.transition().duration(750).call(
-      // @ts-ignore - D3 type complexity
-      d3.zoom<SVGSVGElement, unknown>().transform,
+      zoomBehaviorRef.current.transform,
       d3.zoomIdentity.translate(centerX, centerY).scale(scale)
     );
   };
@@ -496,6 +646,88 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         <Button onClick={handleCenterPlayer}>Center on Player</Button>
       </Controls>
 
+      <PlayerLocationWidget>
+        <h3 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Player Location</h3>
+        <InputGroup>
+          <Label>Street:</Label>
+          <Select
+            value={selectedStreetName}
+            onChange={(e) => setSelectedStreetName(e.target.value)}
+          >
+            <option value="Western City Limits">Western City Limits</option>
+            {STREET_NAMES.map((streetName) => (
+              <option key={streetName} value={streetName}>
+                {streetName}
+              </option>
+            ))}
+          </Select>
+        </InputGroup>
+        <InputGroup>
+          <Label>Number:</Label>
+          <Select
+            value={selectedStreetNumber}
+            onChange={(e) => setSelectedStreetNumber(e.target.value)}
+          >
+            <option value="Northern City Limits">Northern City Limits</option>
+            {Array.from({ length: 100 }, (_, i) => {
+              const num = i + 1;
+              const suffix = num === 1 ? 'st' : num === 2 ? 'nd' : num === 3 ? 'rd' : 'th';
+              return `${num}${suffix}`;
+            }).map((streetNumber) => (
+              <option key={streetNumber} value={streetNumber}>
+                {streetNumber}
+              </option>
+            ))}
+          </Select>
+        </InputGroup>
+        <Button onClick={handlePlayerLocationUpdate} style={{ width: '100%', fontSize: '12px' }}>
+          Go to Location
+        </Button>
+        <CurrentLocationText>
+          Current: {getLocationName(playerLocation.x, playerLocation.y)}
+        </CurrentLocationText>
+      </PlayerLocationWidget>
+
+      <NearestBuildingsWidget>
+        <WidgetHeader
+          $isVisible={isNearestBuildingsVisible}
+          onClick={() => setIsNearestBuildingsVisible(!isNearestBuildingsVisible)}
+        >
+          <h3>Nearest Buildings</h3>
+        </WidgetHeader>
+        <WidgetContent $isVisible={isNearestBuildingsVisible}>
+          <BuildingList>
+            <h4 style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#0000ff' }}>Banks</h4>
+            {nearestBanks.map((bank) => (
+              <BuildingItem key={bank.id}>
+                <BuildingName>{getLocationName(bank.coordinate.x, bank.coordinate.y)}</BuildingName>
+                <Distance>{bank.distance} blocks</Distance>
+              </BuildingItem>
+            ))}
+          </BuildingList>
+
+          <BuildingList>
+            <h4 style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#887700' }}>Pubs</h4>
+            {nearestPubs.map((pub) => (
+              <BuildingItem key={pub.id}>
+                <BuildingName>{pub.name}</BuildingName>
+                <Distance>{pub.distance} blocks</Distance>
+              </BuildingItem>
+            ))}
+          </BuildingList>
+
+          <BuildingList>
+            <h4 style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#880000' }}>Transit</h4>
+            {nearestTransit.map((transit) => (
+              <BuildingItem key={transit.id}>
+                <BuildingName>{transit.name}</BuildingName>
+                <Distance>{transit.distance} blocks</Distance>
+              </BuildingItem>
+            ))}
+          </BuildingList>
+        </WidgetContent>
+      </NearestBuildingsWidget>
+
       <PerformanceStats>
         <div><strong>Performance Stats:</strong></div>
         <div>Render Time: {renderTime.toFixed(1)}ms</div>
@@ -503,29 +735,6 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         <div>Total Elements: {(CITY_SIZE * CITY_SIZE).toLocaleString()}</div>
         <div>FPS: Smooth 60fps</div>
       </PerformanceStats>
-
-      <Legend>
-        <LegendHeader $isVisible={isLegendVisible}>
-          <h3>Legend</h3>
-          <ToggleButton onClick={() => setIsLegendVisible(!isLegendVisible)}>
-            {isLegendVisible ? 'Hide' : 'Show'}
-          </ToggleButton>
-        </LegendHeader>
-        <LegendContent $isVisible={isLegendVisible}>
-          <div><strong>Tile Types:</strong></div>
-          <LegendItem $color={colors.city}>City Block (buildings)</LegendItem>
-          <LegendItem $color={colors.street}>Street Segment</LegendItem>
-          <LegendItem $color={colors.intersect}>Street Intersection</LegendItem>
-          <div><strong>Buildings:</strong></div>
-          <LegendItem $color={colors.transit}>Transit Station (T)</LegendItem>
-          <LegendItem $color={colors.pub}>Pub (P)</LegendItem>
-          <LegendItem $color={colors.shop}>Magic Shop (S)</LegendItem>
-          <LegendItem $color={colors.bank}>Bank ($)</LegendItem>
-          <LegendItem $color={colors.lair}>Vampire Lair (L)</LegendItem>
-          <LegendItem $color="rgba(0, 255, 0, 0.3)">High Distance Score (green overlay)</LegendItem>
-          <LegendItem $color={colors.player}>Player Location</LegendItem>
-        </LegendContent>
-      </Legend>
     </MapContainer>
   );
 };

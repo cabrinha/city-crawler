@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import styled from 'styled-components';
 import { D3CityMap } from './components/D3CityMap';
-import type { GameState } from './types/game';
+import type { GameState, Coordinate } from './types/game';
 
 const AppContainer = styled.div`
   width: 100%;
@@ -66,7 +66,7 @@ const GitHubLink = styled.a`
 `;
 
 function App() {
-  const [gameState] = useState<GameState>({
+  const [gameState, setGameState] = useState<GameState>({
     playerLocation: { x: 50, y: 50 }, // Starting at center of the city
     actionPoints: 8,
     maxActionPoints: 90,
@@ -74,6 +74,13 @@ function App() {
     coins: 1000,
     rank: 'Blood Deity'
   });
+
+  const handlePlayerLocationChange = (location: Coordinate) => {
+    setGameState(prev => ({
+      ...prev,
+      playerLocation: location
+    }));
+  };
 
   return (
     <AppContainer>
@@ -110,7 +117,7 @@ function App() {
         </GameStats>
       </Header>
 
-      <D3CityMap playerLocation={gameState.playerLocation} />
+      <D3CityMap playerLocation={gameState.playerLocation} onPlayerLocationChange={handlePlayerLocationChange} />
     </AppContainer>
   );
 }

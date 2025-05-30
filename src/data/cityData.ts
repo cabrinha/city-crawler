@@ -449,21 +449,26 @@ export const BUILDINGS: Building[] = [
 export const CITY_SIZE = 200; // 200x200 grid without border
 
 export function getStreetNumber(index: number): string {
-  // Street numbers: coordinates 2-3 = 1st Street, 4-5 = 2nd Street, ..., 200-201 = 100th Street
-  // But we only go up to 200, so coordinate 200 = 100th Street
-  const streetNum = Math.floor((index + 1) / 2);
+  // Y=1 = Northern City Limits
+  // Y=2,3 = 1st Street, Y=4,5 = 2nd Street, ..., Y=200,201 = 100th Street
+  if (index === 1) {
+    return "Northern City Limits";
+  }
+  const streetNum = Math.floor((index - 2) / 2) + 1;
   if (streetNum < 1) {
     return "Northern City Limits";
   }
-  // if (streetNum < 1 || streetNum > 100) return 'Unknown';
   return `${streetNum}${streetNum === 1 ? 'st' : streetNum === 2 ? 'nd' : streetNum === 3 ? 'rd' : 'th'}`;
 }
 
 export function getStreetName(index: number): string {
-  // Street names: coordinates 2-3 = Aardvark, 4-5 = Alder, ..., 200-201 = Zestless
-  // But we only go up to 200, so coordinate 200 = Zestless
-  const streetIndex = Math.floor((index + 1) / 2) - 1;
-  if (streetIndex < 0) {
+  // X=1 = Western City Limits
+  // X=2,3 = Aardvark, X=4,5 = Alder, ..., X=200,201 = Zestless
+  if (index === 1) {
+    return "Western City Limits";
+  }
+  const streetIndex = Math.floor((index - 2) / 2);
+  if (streetIndex < 0 || streetIndex >= STREET_NAMES.length) {
     return "Western City Limits";
   }
   return STREET_NAMES[streetIndex];
