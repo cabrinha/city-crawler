@@ -573,7 +573,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
           ${d.building ? `${d.building.name} (${d.building.type})` :
             d.tileType === 'city' ? 'City Block' :
             d.tileType === 'intersect' ? 'Street Intersection' : 'Street'}<br/>
-          ${d.distanceScore > 0 ? `<span style="color: #00ff00">Distance Score: ${(d.distanceScore * 100).toFixed(1)}%</span>` : ''}
+          ${d.distanceScore > 0 ? `<span style="color: #00ff00">Thieving Score: ${(d.distanceScore * 1000).toFixed(1)}%</span>` : ''}
           ${d.isPlayer ? '<span style="color: #ff0000">You are here!</span>' : ''}
         `)
         .style('left', `${event.pageX + 10}px`)

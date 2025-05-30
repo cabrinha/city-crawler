@@ -25,16 +25,7 @@ RUN npm install -g serve
 # Copy built application from builder stage
 COPY --from=builder /app/dist /app
 
-# Create simple health check files
-RUN echo "OK" > /app/healthz && \
-    echo "OK" > /app/readyz
-
-# Expose port 3000 (serve default port)
 EXPOSE 3000
-
-# Add health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/healthz || exit 1
 
 # Start the server
 CMD ["serve", "-s", "/app", "-l", "3000"]
