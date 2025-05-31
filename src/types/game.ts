@@ -19,6 +19,7 @@ export interface ReportedLocation {
   reporterName?: string;
   confidence?: 'confirmed' | 'unverified';
   notes?: string;
+  guildLevel?: 1 | 2 | 3; // Guild level for guild buildings
 }
 
 export interface LocationReport {
@@ -29,6 +30,7 @@ export interface LocationReport {
   coordinate?: Coordinate;
   reporterName?: string;
   notes?: string;
+  guildLevel?: 1 | 2 | 3; // Guild level for guild buildings
 }
 
 export interface Street {

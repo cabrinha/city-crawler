@@ -11,6 +11,7 @@ An interactive web-based map for the [Vampires!](https://quiz.ravenblack.net/blo
 - **Player Location**: Visual indicator of current player position
 - **Building Information**: Click on tiles to see building details
 - **Game-like Styling**: Dark theme matching the original game aesthetic
+- **Shop and guild location reporting system**
 
 ## Game Information
 
@@ -60,3 +61,44 @@ The built files will be in the `dist` directory.
 ## License
 
 This project is for educational and fan purposes. The original Vampires! game is created by RavenBlack.
+
+## Database Considerations
+
+Currently, the application uses localStorage for persistence, which works well for a client-side application but has limitations:
+
+**Current localStorage approach:**
+- ✅ Simple implementation
+- ✅ No server required
+- ✅ Fast access
+- ❌ Data lost if user clears browser data
+- ❌ No sharing between users
+- ❌ Limited storage capacity
+
+**Potential database options:**
+
+**Redis:** Good for high-frequency updates and caching
+- ✅ Very fast read/write
+- ✅ Good for real-time features
+- ✅ Built-in data expiration (useful for shop movements)
+- ❌ In-memory (data lost on restart without persistence)
+- ❌ Requires server infrastructure
+
+**PostgreSQL:** Best for comprehensive data management
+- ✅ ACID compliance and data integrity
+- ✅ Complex queries and relationships
+- ✅ User accounts and permissions
+- ✅ Historical data tracking
+- ✅ Robust backup/recovery
+- ❌ More complex setup
+- ❌ Requires server infrastructure
+
+**Recommendation:** For production use with multiple users, PostgreSQL would be ideal for storing reported locations, user accounts, and historical data, with Redis as a cache layer for frequently accessed location data.
+
+## Development
+
+To clear test data during development, open browser console and run:
+```javascript
+// Clear all reported locations
+localStorage.removeItem('vampire_city_reported_locations');
+location.reload();
+```

@@ -28,16 +28,80 @@ const STORAGE_KEY = 'vampire_city_reported_locations';
 // In-memory store for reported locations
 let reportedLocations: ReportedLocation[] = [];
 
+// Check if a shop location has expired (shops move every 12 hours at 10:40 GMT)
+function isShopLocationExpired(reportedAt: Date): boolean {
+  const now = new Date();
+  const gmtNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
+
+  // Get the most recent 10:40 GMT time
+  const today1040 = new Date(gmtNow);
+  today1040.setUTCHours(10, 40, 0, 0);
+
+  const yesterday1040 = new Date(today1040);
+  yesterday1040.setUTCDate(yesterday1040.getUTCDate() - 1);
+
+  // Determine the most recent shop movement time
+  let lastMovement: Date;
+  if (gmtNow >= today1040) {
+    lastMovement = today1040;
+  } else {
+    lastMovement = yesterday1040;
+  }
+
+  return reportedAt < lastMovement;
+}
+
+// Check if a guild location has expired (guilds move every 3-5 days, expire after 5 days)
+function isGuildLocationExpired(reportedAt: Date): boolean {
+  const now = new Date();
+  const fiveDaysAgo = new Date(now.getTime() - (5 * 24 * 60 * 60 * 1000));
+  return reportedAt < fiveDaysAgo;
+}
+
+// Clean up expired locations
+function cleanupExpiredLocations(): void {
+  const initialLength = reportedLocations.length;
+
+  reportedLocations = reportedLocations.filter(location => {
+    if (location.buildingType === 'shop' && isShopLocationExpired(location.reportedAt)) {
+      return false; // Remove expired shop
+    }
+    if (location.buildingType === 'guild' && isGuildLocationExpired(location.reportedAt)) {
+      return false; // Remove expired guild
+    }
+    return true; // Keep non-expired locations
+  });
+
+  // Save if any locations were removed
+  if (reportedLocations.length < initialLength) {
+    saveReportedLocations();
+    console.log(`Cleaned up ${initialLength - reportedLocations.length} expired locations`);
+  }
+}
+
 // Load reported locations from localStorage
 export function loadReportedLocations(): ReportedLocation[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      const parsed = JSON.parse(stored);
-      reportedLocations = parsed.map((location: any) => ({
+      const parsed = JSON.parse(stored) as Array<{
+        id: string;
+        buildingName: string;
+        buildingType: 'shop' | 'guild';
+        coordinate: { x: number; y: number };
+        reportedAt: string;
+        reporterName?: string;
+        confidence?: 'confirmed' | 'unverified';
+        notes?: string;
+        guildLevel?: 1 | 2 | 3;
+      }>;
+      reportedLocations = parsed.map((location) => ({
         ...location,
         reportedAt: new Date(location.reportedAt)
       }));
+
+      // Clean up expired locations after loading
+      cleanupExpiredLocations();
     }
   } catch (error) {
     console.error('Error loading reported locations:', error);
@@ -72,7 +136,8 @@ export function addReportedLocation(report: LocationReport): ReportedLocation {
     reportedAt: new Date(),
     reporterName: report.reporterName,
     confidence: 'unverified',
-    notes: report.notes
+    notes: report.notes,
+    guildLevel: report.guildLevel // Include guild level if provided
   };
 
   // Remove any existing reports for the same building
@@ -111,7 +176,8 @@ export function updateLocationConfidence(id: string, confidence: 'confirmed' | '
 // Parse street intersection to coordinate
 export function parseLocationToCoordinate(streetName: string, streetNumber: string): { x: number; y: number } {
   // Default to center if parsing fails
-  let x = 100, y = 100;
+  let x = 100;
+  let y = 100;
 
   // Find street name index
   const streetIndex = STREET_NAMES.findIndex(name =>
@@ -119,16 +185,16 @@ export function parseLocationToCoordinate(streetName: string, streetNumber: stri
   );
 
   if (streetIndex !== -1) {
-    // X coordinate: street index * 2 + 2 (for intersection)
-    x = (streetIndex * 2) + 2;
+    // X coordinate: street index * 2 + 2 (for intersection) + 1 (one square east)
+    x = (streetIndex * 2) + 2 + 1;
   }
 
   // Parse street number
   const numberMatch = streetNumber.match(/(\d+)/);
   if (numberMatch) {
-    const streetNum = parseInt(numberMatch[1], 10);
-    // Y coordinate: street number * 2 (for intersection)
-    y = streetNum * 2;
+    const streetNum = Number.parseInt(numberMatch[1], 10);
+    // Y coordinate: street number * 2 (for intersection) + 1 (one square south)
+    y = streetNum * 2 + 1;
   }
 
   return { x, y };
@@ -219,7 +285,7 @@ const initializeSampleData = () => {
   // Only add sample data if no reports exist
   const existingReports = getReportedLocations();
   if (existingReports.length === 0) {
-    sampleReports.forEach(report => {
+    for (const report of sampleReports) {
       // Convert ReportedLocation to the format expected by addReportedLocation
       const locationReport: LocationReport = {
         buildingName: report.buildingName,
@@ -231,9 +297,31 @@ const initializeSampleData = () => {
         notes: report.notes
       };
       addReportedLocation(locationReport);
-    });
+    }
   }
 };
 
-// Call this when the module loads
-initializeSampleData();
+// Call this when the module loads - COMMENTED OUT to avoid persistent sample data
+// initializeSampleData();
+
+// Export the function so it can be called manually if needed for testing
+export { initializeSampleData };
+
+// Clear all reported locations (useful for testing)
+export function clearAllReportedLocations(): void {
+  reportedLocations = [];
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+// Initialize the module by loading existing data
+loadReportedLocations();
+
+// Set up periodic cleanup (every hour)
+if (typeof window !== 'undefined') {
+  setInterval(() => {
+    cleanupExpiredLocations();
+  }, 60 * 60 * 1000); // Run every hour
+}
+
+// Export cleanup function for manual use
+export { cleanupExpiredLocations };
