@@ -5,7 +5,7 @@ export interface Coordinate {
 
 export interface Building {
   id: string;
-  type: 'pub' | 'transit' | 'bank' | 'shop' | 'hidden' | 'lair';
+  type: 'pub' | 'transit' | 'bank' | 'shop' | 'hidden' | 'lair' | 'other' | 'guild';
   name: string;
   coordinate: Coordinate;
 }

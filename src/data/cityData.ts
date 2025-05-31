@@ -324,6 +324,66 @@ export const BUILDINGS: Building[] = [
   { id: 'pub_89', type: 'pub', name: 'Xendom Tavern', coordinate: { x: 105, y: 137 } }, // Anguish and 68th
   { id: 'pub_90', type: 'pub', name: 'Ye Olde Gallows Ale House', coordinate: { x: 163, y: 141 } }, // Pyrites and 70th
 
+  // Halls
+  { id: 'hall_of_binding', type: 'other', name: 'Hall of Binding', coordinate: { x: 100, y: 100 } }, // Vervain and 40th
+  { id: 'hall_of_severance', type: 'other', name: 'Hall of Severance', coordinate: { x: 100, y: 100 } }, // Walrus and 40th
+
+  // Special Shops
+  { id: 'cloister_of_secrets', type: 'shop', name: 'Cloister of Secrets', coordinate: { x: 100, y: 100 } }, // Gloom and 1st
+  { id: 'the_sanguinarium', type: 'shop', name: 'The Sanguinarium', coordinate: { x: 100, y: 100 } }, // Fear and 4th
+  { id: 'the_sepulchre_of_shadows', type: 'shop', name: 'The Sepulchre of Shadows', coordinate: { x: 100, y: 100 } }, // Ennui and 1st
+  { id: 'the_eternal_aubade_of_mystical_treasures', type: 'shop', name: 'The Eternal Aubade of Mystical Treasures', coordinate: { x: 100, y: 100 } }, // Zelkova and 47th
+
+  // Guilds
+  { id: 'allurists_guild_1', type: 'guild', name: 'Allurists Guild 1', coordinate: { x: 100, y: 100 } },
+  { id: 'allurists_guild_2', type: 'guild', name: 'Allurists Guild 2', coordinate: { x: 100, y: 100 } },
+  { id: 'allurists_guild_3', type: 'guild', name: 'Allurists Guild 3', coordinate: { x: 100, y: 100 } },
+  { id: 'empaths_guild_1', type: 'guild', name: 'Empaths Guild 1', coordinate: { x: 100, y: 100 } },
+  { id: 'empaths_guild_2', type: 'guild', name: 'Empaths Guild 2', coordinate: { x: 100, y: 100 } },
+  { id: 'empaths_guild_3', type: 'guild', name: 'Empaths Guild 3', coordinate: { x: 100, y: 100 } },
+  { id: 'immolators_guild_1', type: 'guild', name: 'Immolators Guild 1', coordinate: { x: 100, y: 100 } },
+  { id: 'immolators_guild_2', type: 'guild', name: 'Immolators Guild 2', coordinate: { x: 100, y: 100 } },
+  { id: 'immolators_guild_3', type: 'guild', name: 'Immolators Guild 3', coordinate: { x: 100, y: 100 } },
+  { id: 'thieves_guild_1', type: 'guild', name: 'Thieves Guild 1', coordinate: { x: 100, y: 100 } },
+  { id: 'thieves_guild_2', type: 'guild', name: 'Thieves Guild 2', coordinate: { x: 100, y: 100 } },
+  { id: 'thieves_guild_3', type: 'guild', name: 'Thieves Guild 3', coordinate: { x: 100, y: 100 } },
+  { id: 'travellers_guild_1', type: 'guild', name: 'Travellers Guild 1', coordinate: { x: 100, y: 100 } },
+  { id: 'travellers_guild_2', type: 'guild', name: 'Travellers Guild 2', coordinate: { x: 100, y: 100 } },
+  { id: 'travellers_guild_3', type: 'guild', name: 'Travellers Guild 3', coordinate: { x: 100, y: 100 } },
+
+  // Scroll Shops
+  { id: 'scroll_shop_1', type: 'shop', name: 'Discount Scrolls', coordinate: { x: 100, y: 100 } },
+  { id: 'scroll_shop_2', type: 'shop', name: 'Herman\'s Scrolls', coordinate: { x: 100, y: 100 } },
+  { id: 'scroll_shop_3', type: 'shop', name: 'Paper and Scrolls', coordinate: { x: 100, y: 100 } },
+  { id: 'scroll_shop_4', type: 'shop', name: 'Scrollmania', coordinate: { x: 100, y: 100 } },
+  { id: 'scroll_shop_5', type: 'shop', name: 'Scrolls \'n\' Stuff', coordinate: { x: 100, y: 100 } },
+  { id: 'scroll_shop_6', type: 'shop', name: 'Scrolls R Us', coordinate: { x: 100, y: 100 } },
+  { id: 'scroll_shop_7', type: 'shop', name: 'Ye Olde Scrolles', coordinate: { x: 100, y: 100 } },
+  { id: 'scroll_shop_8', type: 'shop', name: 'Scrollworks', coordinate: { x: 100, y: 100 } },
+
+  // Potion Shops
+  { id: 'potion_shop_1', type: 'shop', name: 'Discount Potions', coordinate: { x: 100, y: 100 } },
+  { id: 'potion_shop_2', type: 'shop', name: 'McPotions', coordinate: { x: 100, y: 100 } },
+  { id: 'potion_shop_3', type: 'shop', name: 'Potable Potions', coordinate: { x: 100, y: 100 } },
+  { id: 'potion_shop_4', type: 'shop', name: 'Potion Distillery', coordinate: { x: 100, y: 100 } },
+  { id: 'potion_shop_5', type: 'shop', name: 'Potionworks', coordinate: { x: 100, y: 100 } },
+  { id: 'potion_shop_6', type: 'shop', name: 'Silver Apothecary', coordinate: { x: 100, y: 100 } },
+  { id: 'potion_shop_7', type: 'shop', name: 'The Potion Shoppe', coordinate: { x: 100, y: 100 } },
+
+  // Magic Shops
+  { id: 'magic_shop_1', type: 'shop', name: 'Discount Magic', coordinate: { x: 100, y: 100 } },
+  { id: 'magic_shop_2', type: 'shop', name: 'Dark Desires', coordinate: { x: 100, y: 100 } },
+  { id: 'magic_shop_3', type: 'shop', name: 'Interesting Times', coordinate: { x: 100, y: 100 } },
+  { id: 'magic_shop_4', type: 'shop', name: 'Sparks', coordinate: { x: 100, y: 100 } },
+  { id: 'magic_shop_5', type: 'shop', name: 'The Magic Box', coordinate: { x: 100, y: 100 } },
+  { id: 'magic_shop_6', type: 'shop', name: 'White Light', coordinate: { x: 100, y: 100 } },
+
+  // Pawn Shops
+  { id: 'pawn_shop_1', type: 'shop', name: 'Spinners Pawn', coordinate: { x: 100, y: 100 } },
+  { id: 'pawn_shop_2', type: 'shop', name: 'Ace Pawn', coordinate: { x: 100, y: 100 } },
+  { id: 'pawn_shop_3', type: 'shop', name: 'Checkers Pawn', coordinate: { x: 100, y: 100 } },
+  { id: 'pawn_shop_4', type: 'shop', name: 'Reversi Pawn', coordinate: { x: 100, y: 100 } },
+
   // Vampire Lairs from the official game database (lair.html)
   { id: 'lair_1', type: 'lair', name: 'Ace\'s House of Dumont', coordinate: { x: 13, y: 199 } }, // Cedar and 99th
   { id: 'lair_2', type: 'lair', name: 'Alatáriël Maenor', coordinate: { x: 115, y: 101 } }, // Diamond and 50th
@@ -431,19 +491,6 @@ export const BUILDINGS: Building[] = [
   { id: 'lair_104', type: 'lair', name: 'Wolfshadow\'s and Crazy\'s RBC Casino', coordinate: { x: 147, y: 145 } }, // Lead and 72nd
   { id: 'lair_105', type: 'lair', name: 'Wyndcryer\'s TygerNight\'s and Bambi\'s Lair', coordinate: { x: 83, y: 155 } }, // Unicorn and 77th
   { id: 'lair_106', type: 'lair', name: 'X', coordinate: { x: 119, y: 1 } }, // Emerald and NCL
-
-  // Magic shops scattered around
-  { id: 'shop_1', type: 'shop', name: 'Mystic Emporium', coordinate: { x: 82, y: 122 } },
-  { id: 'shop_2', type: 'shop', name: 'Arcane Artifacts', coordinate: { x: 134, y: 34 } },
-  { id: 'shop_3', type: 'shop', name: 'Shadow Supplies', coordinate: { x: 174, y: 82 } },
-  { id: 'shop_4', type: 'shop', name: 'Occult Oddities', coordinate: { x: 62, y: 54 } },
-  { id: 'shop_5', type: 'shop', name: 'Dark Arts Depot', coordinate: { x: 142, y: 154 } },
-  { id: 'shop_6', type: 'shop', name: 'Necromancer\'s Nook', coordinate: { x: 34, y: 134 } },
-
-  // Hidden/Special buildings
-  { id: 'hidden_1', type: 'hidden', name: 'Secret Lair', coordinate: { x: 30, y: 178 } },
-  { id: 'hidden_2', type: 'hidden', name: 'Underground Hideout', coordinate: { x: 138, y: 50 } },
-  { id: 'hidden_3', type: 'hidden', name: 'Mysterious Building', coordinate: { x: 86, y: 158 } },
 ];
 
 export const CITY_SIZE = 200; // 200x200 grid without border
