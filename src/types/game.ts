@@ -5,9 +5,30 @@ export interface Coordinate {
 
 export interface Building {
   id: string;
-  type: 'pub' | 'transit' | 'bank' | 'shop' | 'hidden' | 'lair' | 'other' | 'guild';
+  type: 'pub' | 'transit' | 'bank' | 'shop' | 'lair' | 'other' | 'guild';
   name: string;
   coordinate: Coordinate;
+}
+
+export interface ReportedLocation {
+  id: string;
+  buildingName: string;
+  buildingType: 'shop' | 'guild';
+  coordinate: Coordinate;
+  reportedAt: Date;
+  reporterName?: string;
+  confidence?: 'confirmed' | 'unverified';
+  notes?: string;
+}
+
+export interface LocationReport {
+  buildingName: string;
+  buildingType: 'shop' | 'guild';
+  streetName: string;
+  streetNumber: string;
+  coordinate?: Coordinate;
+  reporterName?: string;
+  notes?: string;
 }
 
 export interface Street {

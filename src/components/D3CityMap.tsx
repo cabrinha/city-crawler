@@ -3,6 +3,8 @@ import * as d3 from 'd3';
 import styled from 'styled-components';
 import type { Coordinate, Building } from '../types/game';
 import { CITY_SIZE, getBuildingAt, getLocationName, getDistanceScore, BUILDINGS, STREET_NAMES, getStreetName, getStreetNumber } from '../data/cityData';
+import { getReportedLocations } from '../data/reportedLocations';
+import type { ReportedLocation } from '../types/game';
 
 const MapContainer = styled.div`
   width: 100%;
@@ -208,9 +210,10 @@ interface TileData {
   x: number;
   y: number;
   building?: Building;
+  reportedLocation?: ReportedLocation;
   isStrategic: boolean;
   isPlayer: boolean;
-  tileType: 'street' | 'city' | 'intersect'; // Removed citylimit
+  tileType: 'street' | 'city' | 'intersect';
   streetName?: string; // For intersections
   tileColor: string;
   distanceScore: number;
@@ -301,6 +304,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     bank: '#0000ff',          // SPAN.bank { background-color:#0000ff; }
     hidden: '#660066',        // Dark purple for hidden buildings
     lair: '#660022',          // SPAN.lair { background-color:#660022; }
+    guild: '#4400aa',         // Purple for guilds
     strategic: '#008800',     // Green for strategic locations
     player: '#ff0000',        // Red for player location
     grid: '#ffffff',          // White borders
@@ -312,10 +316,14 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
 
   const createGridData = useCallback((): TileData[] => {
     const data: TileData[] = [];
+    const reportedLocations = getReportedLocations();
 
     for (let x = 1; x <= CITY_SIZE; x++) {
       for (let y = 1; y <= CITY_SIZE; y++) {
         const building = getBuildingAt(x, y);
+        const reportedLocation = reportedLocations.find(loc =>
+          loc.coordinate.x === x && loc.coordinate.y === y
+        );
         const distanceScore = getDistanceScore(x, y);
         const isPlayer = playerLocation.x === x && playerLocation.y === y;
 
@@ -349,6 +357,9 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         // Add building colors on top of base tile color
         if (isPlayer) {
           tileColor = colors.player;
+        } else if (reportedLocation) {
+          // Reported locations take precedence over static buildings
+          tileColor = reportedLocation.buildingType === 'shop' ? colors.shop : colors.guild;
         } else if (building) {
           // Buildings use their specific colors from the game CSS
           switch (building.type) {
@@ -356,8 +367,9 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
             case 'pub': tileColor = colors.pub; break;          // #887700
             case 'shop': tileColor = colors.shop; break;        // #004488
             case 'bank': tileColor = colors.bank; break;        // #0000ff
-            case 'hidden': tileColor = colors.hidden; break;    // #660066
+            case 'other': tileColor = colors.hidden; break;     // #660066
             case 'lair': tileColor = colors.lair; break;        // #660022
+            case 'guild': tileColor = colors.guild; break;      // #4400aa
             default: break; // Keep base tile color
           }
         }
@@ -366,6 +378,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
           x,
           y,
           building,
+          reportedLocation,
           isStrategic: distanceScore > 0,
           isPlayer,
           tileType,
@@ -421,7 +434,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
 
     // Add building labels (only visible at higher zoom levels)
     const buildingLabels = g.selectAll('.building-label')
-      .data(gridData.filter(d => d.building))
+      .data(gridData.filter(d => d.building || d.reportedLocation))
       .enter()
       .append('text')
       .attr('class', 'building-label')
@@ -434,17 +447,38 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .attr('font-weight', 'bold')
       .style('display', 'none') // Hidden by default
       .text((d: TileData) => {
+        // Reported locations take precedence
+        if (d.reportedLocation) {
+          return d.reportedLocation.buildingType === 'shop' ? 'RS' : 'RG'; // Reported Shop/Guild
+        }
         if (!d.building) return '';
         switch (d.building.type) {
           case 'transit': return 'T';
           case 'pub': return 'P';
           case 'shop': return 'S';
           case 'bank': return 'B';
-          case 'hidden': return 'H';
+          case 'other': return 'H';
           case 'lair': return 'L';
+          case 'guild': return 'G';
           default: return '';
         }
       });
+
+    // Add reported location confidence indicators
+    const reportedLocationIndicators = g.selectAll('.reported-indicator')
+      .data(gridData.filter(d => d.reportedLocation))
+      .enter()
+      .append('circle')
+      .attr('class', 'reported-indicator')
+      .attr('cx', (d: TileData) => (d.x - 1) * tileSize + tileSize * 0.8)
+      .attr('cy', (d: TileData) => (d.y - 1) * tileSize + tileSize * 0.2)
+      .attr('r', tileSize * 0.15)
+      .attr('fill', (d: TileData) =>
+        d.reportedLocation?.confidence === 'confirmed' ? '#00ff00' : '#ffaa00'
+      )
+      .attr('stroke', 'white')
+      .attr('stroke-width', 0.5)
+      .style('display', 'none'); // Hidden by default, shown at high zoom
 
     // Add player marker
     const playerMarker = g.append('text')
@@ -499,8 +533,10 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         const labelThreshold = 3;
         const detailThreshold = 1;
         const streetSignThreshold = 2;
+        const indicatorThreshold = 4; // Show confidence indicators at high zoom
 
         buildingLabels.style('display', transform.k > labelThreshold ? 'block' : 'none');
+        reportedLocationIndicators.style('display', transform.k > indicatorThreshold ? 'block' : 'none');
         playerMarker.style('display', transform.k > detailThreshold ? 'block' : 'none');
 
         // Show/hide street signs and street names based on zoom level
@@ -570,7 +606,18 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         .style('z-index', '1000')
         .html(`
           <strong>${d.tileType === 'intersect' && d.streetName ? d.streetName : getLocationName(d.x, d.y)}</strong><br/>
-          ${d.building ? `${d.building.name} (${d.building.type})` :
+          ${d.reportedLocation ?
+            `<span style="color: ${d.reportedLocation.buildingType === 'shop' ? '#4488ff' : '#aa44ff'}">
+              ${d.reportedLocation.buildingName} (reported ${d.reportedLocation.buildingType})
+            </span><br/>
+            <span style="color: ${d.reportedLocation.confidence === 'confirmed' ? '#00ff00' : '#ffaa00'}">
+              ${d.reportedLocation.confidence === 'confirmed' ? 'Confirmed' : 'Unverified'}
+            </span><br/>
+            <span style="color: #ccc">
+              Reported ${Math.floor((new Date().getTime() - d.reportedLocation.reportedAt.getTime()) / (1000 * 60 * 60))}h ago
+              ${d.reportedLocation.reporterName ? ` by ${d.reportedLocation.reporterName}` : ''}
+            </span><br/>` :
+            d.building ? `${d.building.name} (${d.building.type})` :
             d.tileType === 'city' ? 'City Block' :
             d.tileType === 'intersect' ? 'Street Intersection' : 'Street'}<br/>
           ${d.distanceScore > 0 ? `<span style="color: #00ff00">Thieving Score: ${(d.distanceScore * 1000).toFixed(1)}%</span>` : ''}

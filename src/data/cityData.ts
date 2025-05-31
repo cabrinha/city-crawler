@@ -329,10 +329,10 @@ export const BUILDINGS: Building[] = [
   { id: 'hall_of_severance', type: 'other', name: 'Hall of Severance', coordinate: { x: 100, y: 100 } }, // Walrus and 40th
 
   // Special Shops
-  { id: 'cloister_of_secrets', type: 'shop', name: 'Cloister of Secrets', coordinate: { x: 100, y: 100 } }, // Gloom and 1st
-  { id: 'the_sanguinarium', type: 'shop', name: 'The Sanguinarium', coordinate: { x: 100, y: 100 } }, // Fear and 4th
-  { id: 'the_sepulchre_of_shadows', type: 'shop', name: 'The Sepulchre of Shadows', coordinate: { x: 100, y: 100 } }, // Ennui and 1st
-  { id: 'the_eternal_aubade_of_mystical_treasures', type: 'shop', name: 'The Eternal Aubade of Mystical Treasures', coordinate: { x: 100, y: 100 } }, // Zelkova and 47th
+  { id: 'cloister_of_secrets', type: 'other', name: 'Cloister of Secrets', coordinate: { x: 100, y: 100 } }, // Gloom and 1st
+  { id: 'the_sanguinarium', type: 'other', name: 'The Sanguinarium', coordinate: { x: 100, y: 100 } }, // Fear and 4th
+  { id: 'the_sepulchre_of_shadows', type: 'other', name: 'The Sepulchre of Shadows', coordinate: { x: 100, y: 100 } }, // Ennui and 1st
+  { id: 'the_eternal_aubade_of_mystical_treasures', type: 'other', name: 'The Eternal Aubade of Mystical Treasures', coordinate: { x: 100, y: 100 } }, // Zelkova and 47th
 
   // Guilds
   { id: 'allurists_guild_1', type: 'guild', name: 'Allurists Guild 1', coordinate: { x: 100, y: 100 } },
