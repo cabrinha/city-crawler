@@ -249,6 +249,9 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const [renderTime, setRenderTime] = useState(0);
   const [visibleTiles, setVisibleTiles] = useState(0);
+  const [selectedCoordinates, setSelectedCoordinates] = useState<Coordinate | null>(null);
+  const [hoverCoordinates, setHoverCoordinates] = useState<Coordinate | null>(null);
+  const [isCoordinatesLocked, setIsCoordinatesLocked] = useState(false);
   const [isNearestBuildingsVisible, setIsNearestBuildingsVisible] = useState(true);
 
   const [selectedStreetName, setSelectedStreetName] = useState(getStreetName(playerLocation.x));
@@ -426,9 +429,19 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .attr('stroke', colors.grid)  // White borders like the game
       .attr('stroke-width', 0.1)
       .style('cursor', 'pointer')
-      .on('click', function(_event, _d: TileData) {
+      .on('click', function(_event, d: TileData) {
+        // Update selected coordinates state and lock for 3 seconds
+        setSelectedCoordinates({ x: d.x, y: d.y });
+        setIsCoordinatesLocked(true);
+
+        // Clear the lock after 3 seconds
+        setTimeout(() => {
+          setIsCoordinatesLocked(false);
+          setSelectedCoordinates(null);
+        }, 3000);
+
         // Highlight selected tile
-        tiles.attr('stroke-width', 0.5);
+        tiles.attr('stroke-width', 0.1).attr('stroke', colors.grid);
         d3.select(this).attr('stroke', '#fff').attr('stroke-width', 2);
       });
 
@@ -594,6 +607,11 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
 
     // Add tooltip functionality
     tiles.on('mouseover', function(event, d: TileData) {
+      // Update hover coordinates if not locked
+      if (!isCoordinatesLocked) {
+        setHoverCoordinates({ x: d.x, y: d.y });
+      }
+
       d3.select('body').append('div')
         .attr('class', 'tooltip')
         .style('position', 'absolute')
@@ -630,6 +648,11 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       d3.select(this).attr('stroke', '#fff').attr('stroke-width', 2);
     })
     .on('mouseout', function() {
+      // Clear hover coordinates if not locked
+      if (!isCoordinatesLocked) {
+        setHoverCoordinates(null);
+      }
+
       // Remove tooltip
       d3.selectAll('.tooltip').remove();
 
@@ -647,7 +670,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     return () => {
       d3.selectAll('.tooltip').remove();
     };
-  }, [playerLocation, createGridData]);
+  }, [playerLocation, createGridData, isCoordinatesLocked]);
 
   const handleZoomIn = () => {
     if (!svgRef.current || !zoomBehaviorRef.current) return;
@@ -779,8 +802,13 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         <div><strong>Performance Stats:</strong></div>
         <div>Render Time: {renderTime.toFixed(1)}ms</div>
         <div>Visible Tiles: {visibleTiles.toLocaleString()}</div>
-        <div>Total Elements: {(CITY_SIZE * CITY_SIZE).toLocaleString()}</div>
-        <div>FPS: Smooth 60fps</div>
+        <div>Coordinates: {
+          selectedCoordinates
+            ? `${selectedCoordinates.x}, ${selectedCoordinates.y}${isCoordinatesLocked ? ' (locked)' : ''}`
+            : hoverCoordinates
+              ? `${hoverCoordinates.x}, ${hoverCoordinates.y}`
+              : 'None'
+        }</div>
       </PerformanceStats>
     </MapContainer>
   );

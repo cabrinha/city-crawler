@@ -197,11 +197,11 @@ export const LocationListings: React.FC<LocationListingsProps> = ({ onLocationUp
     if (diffHours < 1) {
       const diffMinutes = Math.floor(diffMs / (1000 * 60));
       return `${diffMinutes} minutes ago`;
-    } else if (diffHours < 24) {
-      return `${diffHours} hours ago`;
-    } else {
-      return `${diffDays} days ago`;
     }
+    if (diffHours < 24) {
+      return `${diffHours} hours ago`;
+    }
+    return `${diffDays} days ago`;
   };
 
   const handleConfidenceToggle = async (location: ReportedLocation) => {
@@ -296,6 +296,9 @@ export const LocationListings: React.FC<LocationListingsProps> = ({ onLocationUp
 
             <LocationDetails>
               <strong>Location:</strong> {getLocationName(location.coordinate.x, location.coordinate.y)}
+              {location.buildingType === 'guild' && location.guildLevel && (
+                <div><strong>Guild Level:</strong> {location.guildLevel}</div>
+              )}
             </LocationDetails>
 
             <LocationCoordinate>

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import styled from 'styled-components';
 import {
   SHOP_NAMES,
@@ -8,7 +9,7 @@ import {
   parseNaturalLanguageLocation
 } from '../data/reportedLocations';
 import { STREET_NAMES } from '../data/cityData';
-import type { LocationReport } from '../types/game';
+import type { LocationReport, ReportedLocation } from '../types/game';
 
 const ReporterContainer = styled.div`
   background: #1a1a1a;
@@ -158,7 +159,7 @@ const ErrorMessage = styled.div`
 `;
 
 interface LocationReporterProps {
-  onLocationReported?: (location: any) => void;
+  onLocationReported?: (location: ReportedLocation) => void;
 }
 
 export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationReported }) => {
@@ -169,15 +170,17 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
   const [streetNumber, setStreetNumber] = useState('');
   const [reporterName, setReporterName] = useState('');
   const [notes, setNotes] = useState('');
+  const [guildLevel, setGuildLevel] = useState<1 | 2 | 3>(1);
   const [naturalLanguageInput, setNaturalLanguageInput] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const allBuildingNames = [
-    ...SHOP_NAMES,
-    ...SPECIAL_SHOP_NAMES,
-    ...GUILD_NAMES
-  ].sort();
+  const getFilteredBuildingNames = () => {
+    if (buildingType === 'shop') {
+      return [...SHOP_NAMES, ...SPECIAL_SHOP_NAMES].sort();
+    }
+    return GUILD_NAMES.sort();
+  };
 
   const streetNumbers = Array.from({ length: 100 }, (_, i) => {
     const num = i + 1;
@@ -195,7 +198,14 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
     setStreetNumber('');
     setReporterName('');
     setNotes('');
+    setGuildLevel(1);
     setNaturalLanguageInput('');
+  };
+
+  const handleBuildingTypeChange = (newType: 'shop' | 'guild') => {
+    setBuildingType(newType);
+    setBuildingName('');
+    clearMessages();
   };
 
   const handleDropdownSubmit = (e: React.FormEvent) => {
@@ -214,7 +224,8 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
         streetName,
         streetNumber,
         reporterName: reporterName || undefined,
-        notes: notes || undefined
+        notes: notes || undefined,
+        guildLevel: buildingType === 'guild' ? guildLevel : undefined
       };
 
       const reportedLocation = addReportedLocation(report);
@@ -283,7 +294,7 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
             <Label>Building Type</Label>
             <Select
               value={buildingType}
-              onChange={(e) => setBuildingType(e.target.value as 'shop' | 'guild')}
+              onChange={(e) => handleBuildingTypeChange(e.target.value as 'shop' | 'guild')}
             >
               <option value="shop">Shop</option>
               <option value="guild">Guild</option>
@@ -298,11 +309,26 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
               required
             >
               <option value="">Select a building...</option>
-              {allBuildingNames.map(name => (
+              {getFilteredBuildingNames().map(name => (
                 <option key={name} value={name}>{name}</option>
               ))}
             </Select>
           </FormSection>
+
+          {buildingType === 'guild' && (
+            <FormSection>
+              <Label>Guild Level *</Label>
+              <Select
+                value={guildLevel}
+                onChange={(e) => setGuildLevel(Number.parseInt(e.target.value, 10) as 1 | 2 | 3)}
+                required
+              >
+                <option value={1}>Level 1</option>
+                <option value={2}>Level 2</option>
+                <option value={3}>Level 3</option>
+              </Select>
+            </FormSection>
+          )}
 
           <FormRow>
             <FormSection>
