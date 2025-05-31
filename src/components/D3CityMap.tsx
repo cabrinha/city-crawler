@@ -449,7 +449,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .text((d: TileData) => {
         // Reported locations take precedence
         if (d.reportedLocation) {
-          return d.reportedLocation.buildingType === 'shop' ? 'RS' : 'RG'; // Reported Shop/Guild
+          return d.reportedLocation.buildingType === 'shop' ? 'S' : 'G'; // Shop/Guild
         }
         if (!d.building) return '';
         switch (d.building.type) {
