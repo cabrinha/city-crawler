@@ -122,22 +122,16 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
         </BackToMapButton>
       )}
 
-      <PageTitle>Vampire City Shop & Guild Reports</PageTitle>
+      <PageTitle>Report Shops & Guilds</PageTitle>
 
       <Subtitle>
-        Help the vampire community by reporting the current locations of shops and guilds!
+        Help the vampire community by reporting the current locations of shops, guilds, and other locations!
         Shops move every 12 hours, and guilds move on specific dates (1st, 6th, 10th, 14th, 19th, 23rd, and 27th of each month at 00:05 UTC).
       </Subtitle>
 
       <InfoBox>
         <InfoTitle>How It Works</InfoTitle>
-        <InfoText>
-          <strong>Shops:</strong> Move to new random locations every 12 hours. There are 4 types: scroll shops, potion shops, magic shops, and pawn shops.
-        </InfoText>
-        <InfoText>
-          <strong>Guilds:</strong> Currently move on the 1st, 6th, 10th, 14th, 19th, 23rd, and 27th of each month at 00:05 UTC/GMT.
-          This means guilds usually stay in the same location for 4-5 days.
-        </InfoText>
+        <InfoText>Shops move every 12 hours, and guilds move on specific dates (1st, 6th, 10th, 14th, 19th, 23rd, and 27th of each month at 00:05 UTC/GMT).</InfoText>
         <InfoText>
           <strong>Reporting:</strong> You can report locations using dropdown menus or natural language like "Paper and Scrolls, right by Regret and 90th".
         </InfoText>

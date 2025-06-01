@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import styled from 'styled-components';
 import type { Coordinate, Building } from '../types/game';
 import { CITY_SIZE, getBuildingAt, getLocationName, getDistanceScore, BUILDINGS, STREET_NAMES, getStreetName, getStreetNumber } from '../data/cityData';
-import { getReportedLocations } from '../data/reportedLocations';
+import { ApiService } from '../services/api';
 import type { ReportedLocation } from '../types/game';
 
 const MapContainer = styled.div`
@@ -249,13 +249,26 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const [renderTime, setRenderTime] = useState(0);
   const [visibleTiles, setVisibleTiles] = useState(0);
+  const [hoveredCoordinates, setHoveredCoordinates] = useState<Coordinate | null>(null);
   const [selectedCoordinates, setSelectedCoordinates] = useState<Coordinate | null>(null);
-  const [hoverCoordinates, setHoverCoordinates] = useState<Coordinate | null>(null);
   const [isCoordinatesLocked, setIsCoordinatesLocked] = useState(false);
   const [isNearestBuildingsVisible, setIsNearestBuildingsVisible] = useState(true);
+  const [playerStreetName, setPlayerStreetName] = useState('');
+  const [playerStreetNumber, setPlayerStreetNumber] = useState('');
+  const [reportedLocations, setReportedLocations] = useState<ReportedLocation[]>([]);
 
-  const [selectedStreetName, setSelectedStreetName] = useState(getStreetName(playerLocation.x));
-  const [selectedStreetNumber, setSelectedStreetNumber] = useState(getStreetNumber(playerLocation.y));
+  // Load reported locations on component mount
+  useEffect(() => {
+    const loadReportedLocations = async () => {
+      try {
+        const locations = await ApiService.getLocations();
+        setReportedLocations(locations);
+      } catch (error) {
+        console.error('Failed to load reported locations:', error);
+      }
+    };
+    loadReportedLocations();
+  }, []);
 
   // Helper function to convert street name to coordinate
   const streetNameToCoordinate = (streetName: string): number => {
@@ -280,8 +293,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   const nearestTransit = findNearestBuildings(playerLocation, 'transit');
 
   const handlePlayerLocationUpdate = () => {
-    const x = streetNameToCoordinate(selectedStreetName);
-    const y = streetNumberToCoordinate(selectedStreetNumber);
+    const x = streetNameToCoordinate(playerStreetName);
+    const y = streetNumberToCoordinate(playerStreetNumber);
 
     if (x >= 1 && x <= CITY_SIZE && y >= 1 && y <= CITY_SIZE && onPlayerLocationChange) {
       onPlayerLocationChange({ x, y });
@@ -290,8 +303,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
 
   // Update street selections when playerLocation prop changes
   useEffect(() => {
-    setSelectedStreetName(getStreetName(playerLocation.x));
-    setSelectedStreetNumber(getStreetNumber(playerLocation.y));
+    setPlayerStreetName(getStreetName(playerLocation.x));
+    setPlayerStreetNumber(getStreetNumber(playerLocation.y));
   }, [playerLocation.x, playerLocation.y]);
 
   // Define colors to match the actual game CSS from blood.css
@@ -319,7 +332,6 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
 
   const createGridData = useCallback((): TileData[] => {
     const data: TileData[] = [];
-    const reportedLocations = getReportedLocations();
 
     for (let x = 1; x <= CITY_SIZE; x++) {
       for (let y = 1; y <= CITY_SIZE; y++) {
@@ -362,7 +374,15 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
           tileColor = colors.player;
         } else if (reportedLocation) {
           // Reported locations take precedence over static buildings
-          tileColor = reportedLocation.buildingType === 'shop' ? colors.shop : colors.guild;
+          switch (reportedLocation.buildingType) {
+            case 'shop': tileColor = colors.shop; break;
+            case 'guild': tileColor = colors.guild; break;
+            case 'hunter': tileColor = '#0BDA51'; break;  // Bright Green for hunters
+            case 'paladin': tileColor = '#90D5FF'; break; // Light blue for paladins
+            case 'werewolf': tileColor = '#cc9933'; break; // Orange for werewolves
+            case 'item': tileColor = '#cccc33'; break;     // Gold for items
+            default: tileColor = colors.shop; break;
+          }
         } else if (building) {
           // Buildings use their specific colors from the game CSS
           switch (building.type) {
@@ -393,7 +413,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     }
 
     return data;
-  }, [playerLocation]);
+  }, [playerLocation, reportedLocations]);
 
   useEffect(() => {
     if (!svgRef.current) return;
@@ -462,7 +482,15 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .text((d: TileData) => {
         // Reported locations take precedence
         if (d.reportedLocation) {
-          return d.reportedLocation.buildingType === 'shop' ? 'S' : 'G'; // Shop/Guild
+          switch (d.reportedLocation.buildingType) {
+            case 'shop': return 'S';
+            case 'guild': return 'G';
+            case 'hunter': return 'H';
+            case 'paladin': return 'P';
+            case 'werewolf': return 'W';
+            case 'item': return 'I';
+            default: return '?';
+          }
         }
         if (!d.building) return '';
         switch (d.building.type) {
@@ -609,7 +637,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     tiles.on('mouseover', function(event, d: TileData) {
       // Update hover coordinates if not locked
       if (!isCoordinatesLocked) {
-        setHoverCoordinates({ x: d.x, y: d.y });
+        setHoveredCoordinates({ x: d.x, y: d.y });
       }
 
       d3.select('body').append('div')
@@ -626,7 +654,9 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
           <strong>${d.tileType === 'intersect' && d.streetName ? d.streetName : getLocationName(d.x, d.y)}</strong><br/>
           ${d.reportedLocation ?
             `<span style="color: ${d.reportedLocation.buildingType === 'shop' ? '#4488ff' : '#aa44ff'}">
-              ${d.reportedLocation.buildingName} (reported ${d.reportedLocation.buildingType})
+              ${d.reportedLocation.buildingType === 'guild' && d.reportedLocation.guildLevel
+                ? `${d.reportedLocation.buildingName} ${d.reportedLocation.guildLevel}`
+                : d.reportedLocation.buildingName} (reported ${d.reportedLocation.buildingType})
             </span><br/>
             <span style="color: ${d.reportedLocation.confidence === 'confirmed' ? '#00ff00' : '#ffaa00'}">
               ${d.reportedLocation.confidence === 'confirmed' ? 'Confirmed' : 'Unverified'}
@@ -650,7 +680,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     .on('mouseout', function() {
       // Clear hover coordinates if not locked
       if (!isCoordinatesLocked) {
-        setHoverCoordinates(null);
+        setHoveredCoordinates(null);
       }
 
       // Remove tooltip
@@ -721,8 +751,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         <InputGroup>
           <Label>Street:</Label>
           <Select
-            value={selectedStreetName}
-            onChange={(e) => setSelectedStreetName(e.target.value)}
+            value={playerStreetName}
+            onChange={(e) => setPlayerStreetName(e.target.value)}
           >
             <option value="Western City Limits">Western City Limits</option>
             {STREET_NAMES.map((streetName) => (
@@ -735,8 +765,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         <InputGroup>
           <Label>Number:</Label>
           <Select
-            value={selectedStreetNumber}
-            onChange={(e) => setSelectedStreetNumber(e.target.value)}
+            value={playerStreetNumber}
+            onChange={(e) => setPlayerStreetNumber(e.target.value)}
           >
             <option value="Northern City Limits">Northern City Limits</option>
             {Array.from({ length: 100 }, (_, i) => {
@@ -805,8 +835,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         <div>Coordinates: {
           selectedCoordinates
             ? `${selectedCoordinates.x}, ${selectedCoordinates.y}${isCoordinatesLocked ? ' (locked)' : ''}`
-            : hoverCoordinates
-              ? `${hoverCoordinates.x}, ${hoverCoordinates.y}`
+            : hoveredCoordinates
+              ? `${hoveredCoordinates.x}, ${hoveredCoordinates.y}`
               : 'None'
         }</div>
       </PerformanceStats>

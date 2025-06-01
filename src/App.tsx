@@ -110,7 +110,7 @@ function App() {
           <Title>Vespertine's City Crawler</Title>
           <GameStats>
             <NavigationButton onClick={goToReports}>
-              Shop & Guild Reports
+              Report
             </NavigationButton>
             <GitHubLink
               href="https://github.com/cabrinha/city-crawler"

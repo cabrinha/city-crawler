@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import {
-  getReportedLocations,
-  getReportedLocationsByType,
-  removeReportedLocation,
-  updateLocationConfidence
-} from '../data/reportedLocations';
+import { ApiService } from '../services/api';
 import { getLocationName } from '../data/cityData';
 import type { ReportedLocation } from '../types/game';
 
@@ -44,10 +39,24 @@ const FilterButton = styled.button<{ active: boolean }>`
   }
 `;
 
-const LocationCard = styled.div<{ type: 'shop' | 'guild' }>`
+const LocationCard = styled.div<{ type: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item' }>`
   background: #000;
-  border: 1px solid ${props => props.type === 'shop' ? '#4a4a1a' : '#1a4a4a'};
-  border-left: 4px solid ${props => props.type === 'shop' ? '#cccc33' : '#3333cc'};
+  border: 1px solid ${props =>
+    props.type === 'shop' ? '#4a4a1a' :
+    props.type === 'guild' ? '#1a4a4a' :
+    props.type === 'hunter' ? '#4a1a1a' :
+    props.type === 'paladin' ? '#1a4a1a' :
+    props.type === 'werewolf' ? '#3a3a1a' :
+    '#2a2a2a'
+  };
+  border-left: 4px solid ${props =>
+    props.type === 'shop' ? '#cccc33' :
+    props.type === 'guild' ? '#3333cc' :
+    props.type === 'hunter' ? '#cc3333' :
+    props.type === 'paladin' ? '#cccc33' :
+    props.type === 'werewolf' ? '#cc9933' :
+    '#9933cc'
+  };
   border-radius: 4px;
   padding: 15px;
   margin-bottom: 15px;
@@ -66,8 +75,15 @@ const LocationName = styled.h4`
   font-size: 1.1em;
 `;
 
-const LocationType = styled.span<{ type: 'shop' | 'guild' }>`
-  background: ${props => props.type === 'shop' ? '#cccc33' : '#3333cc'};
+const LocationType = styled.span<{ type: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item' }>`
+  background: ${props =>
+    props.type === 'shop' ? '#cccc33' :
+    props.type === 'guild' ? '#3333cc' :
+    props.type === 'hunter' ? '#cc3333' :
+    props.type === 'paladin' ? '#cccc33' :
+    props.type === 'werewolf' ? '#cc9933' :
+    '#9933cc'
+  };
   color: #000;
   padding: 2px 8px;
   border-radius: 12px;
@@ -177,11 +193,15 @@ interface LocationListingsProps {
 
 export const LocationListings: React.FC<LocationListingsProps> = ({ onLocationUpdated }) => {
   const [locations, setLocations] = useState<ReportedLocation[]>([]);
-  const [filter, setFilter] = useState<'all' | 'shop' | 'guild'>('all');
+  const [filter, setFilter] = useState<'all' | 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item'>('all');
 
-  const loadLocations = () => {
-    const allLocations = getReportedLocations();
-    setLocations(allLocations);
+  const loadLocations = async () => {
+    try {
+      const allLocations = await ApiService.getLocations();
+      setLocations(allLocations);
+    } catch (error) {
+      console.error('Failed to load locations:', error);
+    }
   };
 
   useEffect(() => {
@@ -206,28 +226,34 @@ export const LocationListings: React.FC<LocationListingsProps> = ({ onLocationUp
 
   const handleConfidenceToggle = async (location: ReportedLocation) => {
     const newConfidence = location.confidence === 'confirmed' ? 'unverified' : 'confirmed';
-    const success = updateLocationConfidence(location.id, newConfidence);
-
-    if (success) {
-      loadLocations();
-      onLocationUpdated?.();
+    try {
+      await ApiService.updateLocationConfidence(location.id, newConfidence);
+      await loadLocations(); // Reload to get updated data
+      if (onLocationUpdated) {
+        onLocationUpdated();
+      }
+    } catch (error) {
+      console.error('Failed to update confidence:', error);
     }
   };
 
   const handleRemove = async (location: ReportedLocation) => {
     if (window.confirm(`Are you sure you want to remove the report for ${location.buildingName}?`)) {
-      const success = removeReportedLocation(location.id);
-
-      if (success) {
-        loadLocations();
-        onLocationUpdated?.();
+      try {
+        await ApiService.deleteLocation(location.id);
+        await loadLocations(); // Reload to get updated data
+        if (onLocationUpdated) {
+          onLocationUpdated();
+        }
+      } catch (error) {
+        console.error('Failed to delete location:', error);
       }
     }
   };
 
   const filteredLocations = filter === 'all'
     ? locations
-    : getReportedLocationsByType(filter);
+    : locations.filter(location => location.buildingType === filter);
 
   const sortedLocations = [...filteredLocations].sort((a, b) =>
     b.reportedAt.getTime() - a.reportedAt.getTime()
@@ -242,7 +268,7 @@ export const LocationListings: React.FC<LocationListingsProps> = ({ onLocationUp
 
   return (
     <ListingsContainer>
-      <ListingsTitle>Reported Shop & Guild Locations</ListingsTitle>
+      <ListingsTitle>Reports</ListingsTitle>
 
       <StatsBar>
         <StatItem><strong>{stats.total}</strong> total reports</StatItem>
@@ -270,12 +296,36 @@ export const LocationListings: React.FC<LocationListingsProps> = ({ onLocationUp
         >
           Guilds ({stats.guilds})
         </FilterButton>
+        <FilterButton
+          active={filter === 'hunter'}
+          onClick={() => setFilter('hunter')}
+        >
+          Hunters ({locations.filter(l => l.buildingType === 'hunter').length})
+        </FilterButton>
+        <FilterButton
+          active={filter === 'paladin'}
+          onClick={() => setFilter('paladin')}
+        >
+          Paladins ({locations.filter(l => l.buildingType === 'paladin').length})
+        </FilterButton>
+        <FilterButton
+          active={filter === 'werewolf'}
+          onClick={() => setFilter('werewolf')}
+        >
+          Werewolves ({locations.filter(l => l.buildingType === 'werewolf').length})
+        </FilterButton>
+        <FilterButton
+          active={filter === 'item'}
+          onClick={() => setFilter('item')}
+        >
+          Items ({locations.filter(l => l.buildingType === 'item').length})
+        </FilterButton>
       </FilterContainer>
 
       {sortedLocations.length === 0 ? (
         <EmptyState>
           {filter === 'all'
-            ? 'No locations reported yet. Be the first to report a shop or guild location!'
+            ? 'No locations reported yet. Be the first to report a shop, guild, hunter, paladin, werewolf, or item location!'
             : `No ${filter} locations reported yet.`
           }
         </EmptyState>
@@ -284,7 +334,11 @@ export const LocationListings: React.FC<LocationListingsProps> = ({ onLocationUp
           <LocationCard key={location.id} type={location.buildingType}>
             <LocationHeader>
               <div>
-                <LocationName>{location.buildingName}</LocationName>
+                <LocationName>
+                  {location.buildingType === 'guild' && location.guildLevel
+                    ? `${location.buildingName} ${location.guildLevel}`
+                    : location.buildingName}
+                </LocationName>
                 <LocationType type={location.buildingType}>
                   {location.buildingType}
                 </LocationType>
@@ -296,9 +350,6 @@ export const LocationListings: React.FC<LocationListingsProps> = ({ onLocationUp
 
             <LocationDetails>
               <strong>Location:</strong> {getLocationName(location.coordinate.x, location.coordinate.y)}
-              {location.buildingType === 'guild' && location.guildLevel && (
-                <div><strong>Guild Level:</strong> {location.guildLevel}</div>
-              )}
             </LocationDetails>
 
             <LocationCoordinate>

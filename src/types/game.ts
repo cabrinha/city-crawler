@@ -13,24 +13,41 @@ export interface Building {
 export interface ReportedLocation {
   id: string;
   buildingName: string;
-  buildingType: 'shop' | 'guild';
+  buildingType: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item';
+  customItemName?: string; // For custom items when buildingType = 'item'
   coordinate: Coordinate;
   reportedAt: Date;
   reporterName?: string;
   confidence?: 'confirmed' | 'unverified';
   notes?: string;
   guildLevel?: 1 | 2 | 3; // Guild level for guild buildings
+  expiresAt?: Date; // When this report expires
 }
 
 export interface LocationReport {
   buildingName: string;
-  buildingType: 'shop' | 'guild';
+  buildingType: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item';
+  customItemName?: string; // For custom items when buildingType = 'item'
   streetName: string;
   streetNumber: string;
   coordinate?: Coordinate;
   reporterName?: string;
   notes?: string;
   guildLevel?: 1 | 2 | 3; // Guild level for guild buildings
+}
+
+export interface TopContributor {
+  username: string;
+  total_reports: number;
+  created_at: Date;
+  rank: number;
+}
+
+export interface DatabaseStats {
+  total_reports: number;
+  reports_by_type: Record<string, number>;
+  total_contributors: number;
+  confirmed_reports: number;
 }
 
 export interface Street {
