@@ -10,7 +10,7 @@ const ListingsContainer = styled.div`
   border-radius: 8px;
   padding: 20px;
   margin: 20px 0;
-  max-width: 800px;
+  max-width: 1800px;
 `;
 
 const ListingsTitle = styled.h3`
@@ -19,181 +19,133 @@ const ListingsTitle = styled.h3`
   text-align: center;
 `;
 
-const FilterContainer = styled.div`
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-`;
-
-const FilterButton = styled.button<{ active: boolean }>`
-  background: ${props => props.active ? '#cc3333' : '#333'};
-  color: #fff;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-
-  &:hover {
-    background: ${props => props.active ? '#aa2222' : '#444'};
-  }
-`;
-
-const LocationCard = styled.div<{ type: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item' }>`
-  background: #000;
-  border: 1px solid ${props =>
-    props.type === 'shop' ? '#4a4a1a' :
-    props.type === 'guild' ? '#1a4a4a' :
-    props.type === 'hunter' ? '#4a1a1a' :
-    props.type === 'paladin' ? '#1a4a1a' :
-    props.type === 'werewolf' ? '#3a3a1a' :
-    '#2a2a2a'
-  };
-  border-left: 4px solid ${props =>
-    props.type === 'shop' ? '#cccc33' :
-    props.type === 'guild' ? '#3333cc' :
-    props.type === 'hunter' ? '#cc3333' :
-    props.type === 'paladin' ? '#cccc33' :
-    props.type === 'werewolf' ? '#cc9933' :
-    '#9933cc'
-  };
-  border-radius: 4px;
-  padding: 15px;
-  margin-bottom: 15px;
-`;
-
-const LocationHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 10px;
-`;
-
-const LocationName = styled.h4`
-  color: #fff;
-  margin: 0;
-  font-size: 1.1em;
-`;
-
-const LocationType = styled.span<{ type: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item' }>`
-  background: ${props =>
-    props.type === 'shop' ? '#cccc33' :
-    props.type === 'guild' ? '#3333cc' :
-    props.type === 'hunter' ? '#cc3333' :
-    props.type === 'paladin' ? '#cccc33' :
-    props.type === 'werewolf' ? '#cc9933' :
-    '#9933cc'
-  };
-  color: #000;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.8em;
-  font-weight: bold;
-  text-transform: uppercase;
-`;
-
-const LocationDetails = styled.div`
-  color: #ccc;
-  margin-bottom: 10px;
-`;
-
-const LocationCoordinate = styled.div`
-  color: #888;
-  font-family: monospace;
-  font-size: 0.9em;
-`;
-
-const TimeInfo = styled.div`
-  color: #888;
-  font-size: 0.9em;
-  margin-top: 10px;
-`;
-
-const ReporterInfo = styled.div`
-  color: #aaa;
-  font-size: 0.9em;
-  margin-top: 5px;
-`;
-
-const Notes = styled.div`
-  color: #ccc;
-  font-style: italic;
-  margin-top: 10px;
-  padding: 8px;
-  background: #111;
-  border-radius: 4px;
-`;
-
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-`;
-
-const ActionButton = styled.button<{ variant: 'confirm' | 'remove' | 'neutral' }>`
-  background: ${props =>
-    props.variant === 'confirm' ? '#2a5a2a' :
-    props.variant === 'remove' ? '#5a2a2a' :
-    '#4a4a4a'
-  };
-  color: #fff;
-  border: none;
-  padding: 4px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8em;
-
-  &:hover {
-    background: ${props =>
-      props.variant === 'confirm' ? '#1a4a1a' :
-      props.variant === 'remove' ? '#4a1a1a' :
-      '#5a5a5a'
-    };
-  }
-`;
-
-const ConfidenceBadge = styled.span<{ confidence: 'confirmed' | 'unverified' }>`
-  background: ${props => props.confidence === 'confirmed' ? '#2a5a2a' : '#5a5a2a'};
-  color: #fff;
-  padding: 2px 6px;
-  border-radius: 8px;
-  font-size: 0.7em;
-  text-transform: uppercase;
-  margin-left: 10px;
-`;
-
-const EmptyState = styled.div`
-  text-align: center;
-  color: #888;
-  padding: 40px;
-  font-style: italic;
-`;
-
 const StatsBar = styled.div`
   display: flex;
   gap: 20px;
   margin-bottom: 20px;
-  padding: 10px;
+  padding: 15px;
   background: #000;
   border-radius: 4px;
   font-size: 0.9em;
+  justify-content: center;
 `;
 
 const StatItem = styled.div`
   color: #ccc;
+  text-align: center;
 
   strong {
     color: #fff;
+    font-size: 1.2em;
+    display: block;
   }
 `;
 
+const TabContainer = styled.div`
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #333;
+`;
+
+const Tab = styled.button<{ active: boolean; type: 'guild' | 'shop' | 'other' }>`
+  background: ${props => props.active ?
+    (props.type === 'guild' ? '#3333cc' :
+     props.type === 'shop' ? '#cccc33' : '#9933cc') : 'transparent'};
+  color: ${props => props.active ?
+    (props.type === 'shop' ? '#000' : '#fff') : '#ccc'};
+  border: none;
+  padding: 15px 30px;
+  cursor: pointer;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-transform: uppercase;
+  border-bottom: 3px solid ${props => props.active ?
+    (props.type === 'guild' ? '#3333cc' :
+     props.type === 'shop' ? '#cccc33' : '#9933cc') : 'transparent'};
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: ${props => props.active ?
+      (props.type === 'guild' ? '#3333cc' :
+       props.type === 'shop' ? '#cccc33' : '#9933cc') :
+      (props.type === 'guild' ? 'rgba(51, 51, 204, 0.2)' :
+       props.type === 'shop' ? 'rgba(204, 204, 51, 0.2)' : 'rgba(153, 51, 204, 0.2)')};
+    color: ${props => props.active ?
+      (props.type === 'shop' ? '#000' : '#fff') : '#fff'};
+  }
+`;
+
+const TabContent = styled.div`
+  min-height: 400px;
+`;
+
+const LocationGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+`;
+
+const LocationCard = styled.div<{ type: 'guild' | 'shop' | 'other' }>`
+  background: #000;
+  border: 1px solid #333;
+  border-left: 3px solid ${props =>
+    props.type === 'guild' ? '#3333cc' :
+    props.type === 'shop' ? '#cccc33' : '#9933cc'};
+  border-radius: 4px;
+  padding: 8px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${props =>
+      props.type === 'guild' ? 'rgba(51, 51, 204, 0.05)' :
+      props.type === 'shop' ? 'rgba(204, 204, 51, 0.05)' : 'rgba(153, 51, 204, 0.05)'};
+    border-color: ${props =>
+      props.type === 'guild' ? '#4444dd' :
+      props.type === 'shop' ? '#dddd44' : '#aa44dd'};
+  }
+`;
+
+const LocationName = styled.div`
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.85em;
+  margin-bottom: 4px;
+  line-height: 1.2;
+`;
+
+const LocationDetails = styled.div`
+  color: #ccc;
+  font-size: 0.75em;
+  margin-bottom: 6px;
+  line-height: 1.2;
+`;
+
+const LocationMeta = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+`;
+
+const ReportedBy = styled.span`
+  color: #888;
+  font-size: 0.7em;
+`;
+
+const EmptyState = styled.div`
+  text-align: center;
+  color: #666;
+  padding: 60px 20px;
+  font-style: italic;
+  font-size: 1.1em;
+`;
+
 interface LocationListingsProps {
-  onLocationUpdated?: () => void;
 }
 
-export const LocationListings: React.FC<LocationListingsProps> = ({ onLocationUpdated }) => {
+export const LocationListings: React.FC<LocationListingsProps> = () => {
   const [locations, setLocations] = useState<ReportedLocation[]>([]);
-  const [filter, setFilter] = useState<'all' | 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item'>('all');
+  const [activeTab, setActiveTab] = useState<'guild' | 'shop' | 'other'>('guild');
 
   const loadLocations = async () => {
     try {
@@ -208,187 +160,128 @@ export const LocationListings: React.FC<LocationListingsProps> = ({ onLocationUp
     loadLocations();
   }, []);
 
-  const formatTimeAgo = (date: Date): string => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffHours < 1) {
-      const diffMinutes = Math.floor(diffMs / (1000 * 60));
-      return `${diffMinutes} minutes ago`;
-    }
-    if (diffHours < 24) {
-      return `${diffHours} hours ago`;
-    }
-    return `${diffDays} days ago`;
-  };
-
-  const handleConfidenceToggle = async (location: ReportedLocation) => {
-    const newConfidence = location.confidence === 'confirmed' ? 'unverified' : 'confirmed';
-    try {
-      await ApiService.updateLocationConfidence(location.id, newConfidence);
-      await loadLocations(); // Reload to get updated data
-      if (onLocationUpdated) {
-        onLocationUpdated();
-      }
-    } catch (error) {
-      console.error('Failed to update confidence:', error);
-    }
-  };
-
-  const handleRemove = async (location: ReportedLocation) => {
-    if (window.confirm(`Are you sure you want to remove the report for ${location.buildingName}?`)) {
-      try {
-        await ApiService.deleteLocation(location.id);
-        await loadLocations(); // Reload to get updated data
-        if (onLocationUpdated) {
-          onLocationUpdated();
-        }
-      } catch (error) {
-        console.error('Failed to delete location:', error);
-      }
-    }
-  };
-
-  const filteredLocations = filter === 'all'
-    ? locations
-    : locations.filter(location => location.buildingType === filter);
-
-  const sortedLocations = [...filteredLocations].sort((a, b) =>
-    b.reportedAt.getTime() - a.reportedAt.getTime()
-  );
+  // Group locations by type
+  const guilds = locations.filter(l => l.buildingType === 'guild').sort((a, b) => {
+    const nameA = a.buildingType === 'guild' && a.guildLevel ? `${a.buildingName} ${a.guildLevel}` : a.buildingName;
+    const nameB = b.buildingType === 'guild' && b.guildLevel ? `${b.buildingName} ${b.guildLevel}` : b.buildingName;
+    return nameA.localeCompare(nameB);
+  });
+  const shops = locations.filter(l => l.buildingType === 'shop').sort((a, b) => a.buildingName.localeCompare(b.buildingName));
+  const others = locations.filter(l => !['guild', 'shop'].includes(l.buildingType)).sort((a, b) => a.buildingName.localeCompare(b.buildingName));
 
   const stats = {
     total: locations.length,
-    shops: locations.filter(l => l.buildingType === 'shop').length,
-    guilds: locations.filter(l => l.buildingType === 'guild').length,
+    guilds: guilds.length,
+    shops: shops.length,
+    others: others.length,
     confirmed: locations.filter(l => l.confidence === 'confirmed').length
+  };
+
+  const renderLocationCard = (location: ReportedLocation, type: 'guild' | 'shop' | 'other') => (
+    <LocationCard key={location.id} type={type}>
+      <LocationName>
+        {location.buildingType === 'guild' && location.guildLevel
+          ? `${location.buildingName} ${location.guildLevel}`
+          : location.buildingName}
+      </LocationName>
+      <LocationDetails>
+        📍 {getLocationName(location.coordinate.x, location.coordinate.y)}
+        {location.buildingType !== 'guild' && location.buildingType !== 'shop' && (
+          <> • {location.buildingType}</>
+        )}
+      </LocationDetails>
+      <LocationMeta style={{ justifyContent: 'center' }}>
+        <ReportedBy>
+          Reported by {location.reporterName}
+        </ReportedBy>
+      </LocationMeta>
+    </LocationCard>
+  );
+
+  const getCurrentTabData = () => {
+    switch (activeTab) {
+      case 'guild': return guilds;
+      case 'shop': return shops;
+      case 'other': return others;
+      default: return [];
+    }
+  };
+
+  const getEmptyMessage = () => {
+    switch (activeTab) {
+      case 'guild': return 'No guild locations reported yet';
+      case 'shop': return 'No shop locations reported yet';
+      case 'other': return 'No other locations reported yet';
+      default: return 'No locations found';
+    }
   };
 
   return (
     <ListingsContainer>
-      <ListingsTitle>Reports</ListingsTitle>
+      <ListingsTitle>Location Reports</ListingsTitle>
 
       <StatsBar>
-        <StatItem><strong>{stats.total}</strong> total reports</StatItem>
-        <StatItem><strong>{stats.shops}</strong> shops</StatItem>
-        <StatItem><strong>{stats.guilds}</strong> guilds</StatItem>
-        <StatItem><strong>{stats.confirmed}</strong> confirmed</StatItem>
+        <StatItem>
+          <strong>{stats.total}</strong>
+          Total Reports
+        </StatItem>
+        <StatItem>
+          <strong>{stats.guilds}</strong>
+          Guilds
+        </StatItem>
+        <StatItem>
+          <strong>{stats.shops}</strong>
+          Shops
+        </StatItem>
+        {stats.others > 0 && (
+          <StatItem>
+            <strong>{stats.others}</strong>
+            Others
+          </StatItem>
+        )}
+        <StatItem>
+          <strong>{stats.confirmed}</strong>
+          Confirmed
+        </StatItem>
       </StatsBar>
 
-      <FilterContainer>
-        <FilterButton
-          active={filter === 'all'}
-          onClick={() => setFilter('all')}
-        >
-          All ({locations.length})
-        </FilterButton>
-        <FilterButton
-          active={filter === 'shop'}
-          onClick={() => setFilter('shop')}
-        >
-          Shops ({stats.shops})
-        </FilterButton>
-        <FilterButton
-          active={filter === 'guild'}
-          onClick={() => setFilter('guild')}
+      <TabContainer>
+        <Tab
+          active={activeTab === 'guild'}
+          type="guild"
+          onClick={() => setActiveTab('guild')}
         >
           Guilds ({stats.guilds})
-        </FilterButton>
-        <FilterButton
-          active={filter === 'hunter'}
-          onClick={() => setFilter('hunter')}
+        </Tab>
+        <Tab
+          active={activeTab === 'shop'}
+          type="shop"
+          onClick={() => setActiveTab('shop')}
         >
-          Hunters ({locations.filter(l => l.buildingType === 'hunter').length})
-        </FilterButton>
-        <FilterButton
-          active={filter === 'paladin'}
-          onClick={() => setFilter('paladin')}
+          Shops ({stats.shops})
+        </Tab>
+        <Tab
+          active={activeTab === 'other'}
+          type="other"
+          onClick={() => setActiveTab('other')}
         >
-          Paladins ({locations.filter(l => l.buildingType === 'paladin').length})
-        </FilterButton>
-        <FilterButton
-          active={filter === 'werewolf'}
-          onClick={() => setFilter('werewolf')}
-        >
-          Werewolves ({locations.filter(l => l.buildingType === 'werewolf').length})
-        </FilterButton>
-        <FilterButton
-          active={filter === 'item'}
-          onClick={() => setFilter('item')}
-        >
-          Items ({locations.filter(l => l.buildingType === 'item').length})
-        </FilterButton>
-      </FilterContainer>
+          Others ({stats.others})
+        </Tab>
+      </TabContainer>
 
-      {sortedLocations.length === 0 ? (
-        <EmptyState>
-          {filter === 'all'
-            ? 'No locations reported yet. Be the first to report a shop, guild, hunter, paladin, werewolf, or item location!'
-            : `No ${filter} locations reported yet.`
-          }
-        </EmptyState>
-      ) : (
-        sortedLocations.map(location => (
-          <LocationCard key={location.id} type={location.buildingType}>
-            <LocationHeader>
-              <div>
-                <LocationName>
-                  {location.buildingType === 'guild' && location.guildLevel
-                    ? `${location.buildingName} ${location.guildLevel}`
-                    : location.buildingName}
-                </LocationName>
-                <LocationType type={location.buildingType}>
-                  {location.buildingType}
-                </LocationType>
-                <ConfidenceBadge confidence={location.confidence || 'unverified'}>
-                  {location.confidence || 'unverified'}
-                </ConfidenceBadge>
-              </div>
-            </LocationHeader>
-
-            <LocationDetails>
-              <strong>Location:</strong> {getLocationName(location.coordinate.x, location.coordinate.y)}
-            </LocationDetails>
-
-            <LocationCoordinate>
-              Coordinates: ({location.coordinate.x}, {location.coordinate.y})
-            </LocationCoordinate>
-
-            <TimeInfo>
-              Reported {formatTimeAgo(location.reportedAt)}
-            </TimeInfo>
-
-            {location.reporterName && (
-              <ReporterInfo>
-                Reported by: {location.reporterName}
-              </ReporterInfo>
+      <TabContent>
+        {getCurrentTabData().length === 0 ? (
+          <EmptyState>
+            {getEmptyMessage()}
+          </EmptyState>
+        ) : (
+          <LocationGrid>
+            {getCurrentTabData().map(location =>
+              renderLocationCard(location, activeTab)
             )}
-
-            {location.notes && (
-              <Notes>
-                "{location.notes}"
-              </Notes>
-            )}
-
-            <ActionButtons>
-              <ActionButton
-                variant="confirm"
-                onClick={() => handleConfidenceToggle(location)}
-              >
-                {location.confidence === 'confirmed' ? 'Mark Unverified' : 'Mark Confirmed'}
-              </ActionButton>
-              <ActionButton
-                variant="remove"
-                onClick={() => handleRemove(location)}
-              >
-                Remove
-              </ActionButton>
-            </ActionButtons>
-          </LocationCard>
-        ))
-      )}
+          </LocationGrid>
+        )}
+      </TabContent>
     </ListingsContainer>
   );
 };

@@ -17,15 +17,15 @@ const PageTitle = styled.h1`
   font-size: 2.5em;
 `;
 
-const Subtitle = styled.p`
-  text-align: center;
-  color: #ccc;
-  margin-bottom: 40px;
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
-  line-height: 1.6;
-`;
+// const Subtitle = styled.p`
+//   text-align: center;
+//   color: #ccc;
+//   margin-bottom: 40px;
+//   max-width: 800px;
+//   margin-left: auto;
+//   margin-right: auto;
+//   line-height: 1.6;
+// `;
 
 const TabNavigation = styled.div`
   display: flex;
@@ -55,27 +55,27 @@ const ContentContainer = styled.div`
   justify-content: center;
 `;
 
-const InfoBox = styled.div`
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 20px;
-  margin: 20px 0;
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
-`;
+// const InfoBox = styled.div`
+//   background: #1a1a1a;
+//   border: 1px solid #333;
+//   border-radius: 8px;
+//   padding: 20px;
+//   margin: 20px 0;
+//   max-width: 800px;
+//   margin-left: auto;
+//   margin-right: auto;
+// `;
 
-const InfoTitle = styled.h3`
-  color: #cc3333;
-  margin-bottom: 15px;
-`;
+// const InfoTitle = styled.h3`
+//   color: #cc3333;
+//   margin-bottom: 15px;
+// `;
 
-const InfoText = styled.p`
-  color: #ccc;
-  margin-bottom: 10px;
-  line-height: 1.5;
-`;
+// const InfoText = styled.p`
+//   color: #ccc;
+//   margin-bottom: 10px;
+//   line-height: 1.5;
+// `;
 
 const BackToMapButton = styled.button`
   position: fixed;
@@ -109,11 +109,6 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
     setActiveTab('listings'); // Switch to listings to show the new report
   };
 
-  const handleLocationUpdated = () => {
-    // Refresh when locations are updated
-    setRefreshKey(prev => prev + 1);
-  };
-
   return (
     <PageContainer>
       {onBackToMap && (
@@ -123,19 +118,6 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
       )}
 
       <PageTitle>Report Shops & Guilds</PageTitle>
-
-      <Subtitle>
-        Help the vampire community by reporting the current locations of shops, guilds, and other locations!
-        Shops move every 12 hours, and guilds move on specific dates (1st, 6th, 10th, 14th, 19th, 23rd, and 27th of each month at 00:05 UTC).
-      </Subtitle>
-
-      <InfoBox>
-        <InfoTitle>How It Works</InfoTitle>
-        <InfoText>Shops move every 12 hours, and guilds move on specific dates (1st, 6th, 10th, 14th, 19th, 23rd, and 27th of each month at 00:05 UTC/GMT).</InfoText>
-        <InfoText>
-          <strong>Reporting:</strong> You can report locations using dropdown menus or natural language like "Paper and Scrolls, right by Regret and 90th".
-        </InfoText>
-      </InfoBox>
 
       <TabNavigation>
         <TabButton
@@ -159,7 +141,6 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
         {activeTab === 'listings' && (
           <LocationListings
             key={refreshKey}
-            onLocationUpdated={handleLocationUpdated}
           />
         )}
       </ContentContainer>
