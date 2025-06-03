@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { D3CityMap } from './components/D3CityMap';
 import { LocationReportsPage } from './components/LocationReportsPage';
 import { RankingsPage } from './components/RankingsPage';
+import { updateMetaTags } from './main';
 import type { GameState, Coordinate } from './types/game';
 
 const AppContainer = styled.div`
@@ -108,6 +109,10 @@ function App() {
   const goToMap = () => navigate('/');
 
   const isMapPage = location.pathname === '/';
+
+  useEffect(() => {
+    updateMetaTags();
+  }, []);
 
   return (
     <AppContainer>

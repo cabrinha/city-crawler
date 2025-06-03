@@ -205,9 +205,28 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
     return [];
   };
 
+  // Helper function to get correct ordinal suffix
+  const getOrdinalSuffix = (num: number): string => {
+    const lastDigit = num % 10;
+    const lastTwoDigits = num % 100;
+
+    // Handle special cases: 11th, 12th, 13th
+    if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
+      return 'th';
+    }
+
+    // Handle regular cases
+    switch (lastDigit) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
+
   const streetNumbers = Array.from({ length: 100 }, (_, i) => {
     const num = i + 1;
-    return `${num}${num === 1 ? 'st' : num === 2 ? 'nd' : num === 3 ? 'rd' : 'th'}`;
+    return `${num}${getOrdinalSuffix(num)}`;
   });
 
   const clearMessages = () => {
@@ -374,6 +393,13 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
 
       console.log(`🔍 Processing ${locationLines.length} location(s)`);
 
+      // Parse comma-separated reporter names
+      const reporterNames = reporterName
+        ? reporterName.split(',').map(name => name.trim()).filter(name => name.length > 0)
+        : [];
+
+      console.log('👥 Reporter names:', reporterNames);
+
       const results: { success: number; failed: number; details: string[] } = {
         success: 0,
         failed: 0,
@@ -394,32 +420,39 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
             continue;
           }
 
+          // Cycle through reporter names or use single name
+          const currentReporterName = reporterNames.length > 0
+            ? reporterNames[index % reporterNames.length]
+            : undefined;
+
+          console.log(`📝 Using reporter name: ${currentReporterName || 'anonymous'}`);
+
           const report: LocationReport = {
             ...parsedReport,
             coordinate: parsedReport.coordinate || parseLocationToCoordinate(parsedReport.streetName, parsedReport.streetNumber),
-            reporterName: reporterName || undefined,
+            reporterName: currentReporterName,
             notes: notes || undefined,
             bloodAmount,
             coins
           };
 
-          console.log(`📤 Sending API request for: ${parsedReport.buildingName}`);
-          await ApiService.createLocation(report);
+          console.log(`📤 Sending API request for: ${parsedReport.buildingName}`, report);
+          const reportedLocation = await ApiService.createLocation(report);
           console.log(`✅ Successfully reported: ${parsedReport.buildingName}`);
 
           results.success++;
-          results.details.push(`✅ ${parsedReport.buildingName} at ${parsedReport.streetName} & ${parsedReport.streetNumber}`);
+          results.details.push(`✅ ${parsedReport.buildingName} at ${parsedReport.streetName} & ${parsedReport.streetNumber} (by ${currentReporterName || 'anonymous'})`);
 
           if (onLocationReported) {
-            // We don't have the full returned location object for batch processing
-            // Just trigger the callback to refresh the listings
-            onLocationReported({} as ReportedLocation);
+            // Trigger the callback to refresh the listings
+            onLocationReported(reportedLocation);
           }
 
         } catch (error) {
           console.error(`❌ API request failed for: ${locationLine}`, error);
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
           results.failed++;
-          results.details.push(`❌ Failed to report: "${locationLine}"`);
+          results.details.push(`❌ Failed to report: "${locationLine}" - ${errorMsg}`);
         }
       }
 
@@ -428,11 +461,12 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
         setSuccessMessage(`Successfully reported ${results.success} location${results.success > 1 ? 's' : ''}!`);
         resetForm();
       } else if (results.success > 0 && results.failed > 0) {
-        setSuccessMessage(`Reported ${results.success} location${results.success > 1 ? 's' : ''}, ${results.failed} failed. Check console for details.`);
+        setSuccessMessage(`Reported ${results.success} location${results.success > 1 ? 's' : ''}, ${results.failed} failed.`);
+        setErrorMessage(`Some locations failed to parse. Check details in console.`);
         console.log('📊 Batch processing results:', results);
       } else {
-        setErrorMessage(`Failed to report any locations. Please check the format and try again.`);
-        console.log('📊 Batch processing results:', results);
+        setErrorMessage(`Failed to report any locations. Check the format and try again.`);
+        console.log('📊 Detailed failure reasons:', results.details);
       }
 
     } catch (error) {
@@ -615,11 +649,13 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
               onChange={(e) => setNaturalLanguageInput(e.target.value)}
               placeholder="e.g., Paper and Scrolls, right by Regret and 90th
 Discount Magic, right by Lonely and 65th
-Thieves Guild at Fear and 23rd"
+Thieves Guild at Fear and 23rd
+Discount Scrolls, right by Chagrin and the NCL
+Some Shop, right by the WCL and 50th"
               required
             />
             <ExampleText>
-              Enter one or more locations, one per line. Examples: "Discount Magic, right by Lonely and 65th" or "Thieves Guild at Fear and 23rd"
+              Enter one or more locations, one per line. Examples: "Discount Magic, right by Lonely and 65th" or "Thieves Guild at Fear and 23rd". Use "NCL" for Northern City Limits and "WCL" for Western City Limits.
             </ExampleText>
           </FormSection>
 

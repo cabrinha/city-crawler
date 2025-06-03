@@ -771,7 +771,19 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
             <option value="Northern City Limits">Northern City Limits</option>
             {Array.from({ length: 100 }, (_, i) => {
               const num = i + 1;
-              const suffix = num === 1 ? 'st' : num === 2 ? 'nd' : num === 3 ? 'rd' : 'th';
+              const lastDigit = num % 10;
+              const lastTwoDigits = num % 100;
+
+              // Handle special cases: 11th, 12th, 13th
+              let suffix = 'th';
+              if (!(lastTwoDigits >= 11 && lastTwoDigits <= 13)) {
+                switch (lastDigit) {
+                  case 1: suffix = 'st'; break;
+                  case 2: suffix = 'nd'; break;
+                  case 3: suffix = 'rd'; break;
+                }
+              }
+
               return `${num}${suffix}`;
             }).map((streetNumber) => (
               <option key={streetNumber} value={streetNumber}>

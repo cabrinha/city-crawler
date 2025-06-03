@@ -1,0 +1,24 @@
+{
+  "name": "Vespertine's City Crawler - An Interactive Map for RavenBlack City",
+  "short_name": "City Crawler",
+  "description": "Track shops, guilds, hunters, and more in RavenBlack City with real-time updates and leaderboard rankings",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#cc3333",
+  "orientation": "portrait-primary",
+  "categories": ["games", "utilities"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    }
+  ]
+}

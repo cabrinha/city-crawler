@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { ApiService } from '../services/api';
+import { updateMetaTags } from '../main';
 import type { TopContributor, BloodDeity, RichVampire } from '../types/game';
 
 const PageContainer = styled.div`
@@ -168,6 +169,9 @@ export const RankingsPage: React.FC<RankingsPageProps> = ({ onBackToMap }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Update meta tags for SEO
+    updateMetaTags('rankings');
+
     const loadLeaderboards = async () => {
       try {
         setLoading(true);

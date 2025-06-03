@@ -505,7 +505,27 @@ export function getStreetNumber(index: number): string {
   if (streetNum < 1) {
     return "Northern City Limits";
   }
-  return `${streetNum}${streetNum === 1 ? 'st' : streetNum === 2 ? 'nd' : streetNum === 3 ? 'rd' : 'th'}`;
+
+  // Helper function for correct ordinal suffix
+  const getOrdinalSuffix = (num: number): string => {
+    const lastDigit = num % 10;
+    const lastTwoDigits = num % 100;
+
+    // Handle special cases: 11th, 12th, 13th
+    if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
+      return 'th';
+    }
+
+    // Handle regular cases
+    switch (lastDigit) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
+
+  return `${streetNum}${getOrdinalSuffix(streetNum)}`;
 }
 
 export function getStreetName(index: number): string {

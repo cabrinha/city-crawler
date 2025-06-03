@@ -179,22 +179,32 @@ export function parseLocationToCoordinate(streetName: string, streetNumber: stri
   let x = 100;
   let y = 100;
 
-  // Find street name index
-  const streetIndex = STREET_NAMES.findIndex(name =>
-    name.toLowerCase() === streetName.toLowerCase()
-  );
+  // Handle Western City Limits specially
+  if (streetName.toLowerCase() === 'western city limits') {
+    x = 1;
+  } else {
+    // Find street name index
+    const streetIndex = STREET_NAMES.findIndex(name =>
+      name.toLowerCase() === streetName.toLowerCase()
+    );
 
-  if (streetIndex !== -1) {
-    // X coordinate: street index * 2 + 2 (for intersection) + 1 (one square east)
-    x = (streetIndex * 2) + 2 + 1;
+    if (streetIndex !== -1) {
+      // X coordinate: street index * 2 + 2 (for intersection) + 1 (one square east)
+      x = (streetIndex * 2) + 2 + 1;
+    }
   }
 
-  // Parse street number
-  const numberMatch = streetNumber.match(/(\d+)/);
-  if (numberMatch) {
-    const streetNum = Number.parseInt(numberMatch[1], 10);
-    // Y coordinate: street number * 2 (for intersection) + 1 (one square south)
-    y = streetNum * 2 + 1;
+  // Handle Northern City Limits specially
+  if (streetNumber.toLowerCase() === 'northern city limits') {
+    y = 1;
+  } else {
+    // Parse street number
+    const numberMatch = streetNumber.match(/(\d+)/);
+    if (numberMatch) {
+      const streetNum = Number.parseInt(numberMatch[1], 10);
+      // Y coordinate: street number * 2 (for intersection) + 1 (one square south)
+      y = streetNum * 2 + 1;
+    }
   }
 
   return { x, y };
@@ -205,24 +215,84 @@ export function parseNaturalLanguageLocation(description: string): LocationRepor
   // Examples:
   // "Paper and Scrolls, right by Regret and 90th"
   // "Discount Magic, right by Lonely and 65th"
+  // "Discount Scrolls, right by Chagrin and the NCL"
+  // "Some Shop, right by the WCL and 50th"
+
+  console.log(`🔍 Parsing: "${description}"`);
+
+  // Handle common abbreviations
+  let normalizedDescription = description
+    .replace(/\bthe NCL\b/gi, 'Northern City Limits') // NCL = Northern City Limits
+    .replace(/\bNCL\b/gi, 'Northern City Limits')
+    .replace(/\bthe WCL\b/gi, 'Western City Limits')  // WCL = Western City Limits
+    .replace(/\bWCL\b/gi, 'Western City Limits');
+
+  console.log(`📝 Normalized: "${normalizedDescription}"`);
 
   const patterns = [
-    // "BuildingName, right by StreetName and StreetNumber"
-    /^(.+?),\s*right by\s+(.+?)\s+and\s+(\d+)(?:st|nd|rd|th)?$/i,
-    // "BuildingName at StreetName and StreetNumber"
-    /^(.+?)\s*at\s+(.+?)\s+and\s+(\d+)(?:st|nd|rd|th)?$/i,
-    // "BuildingName on StreetName and StreetNumber"
-    /^(.+?)\s*on\s+(.+?)\s+and\s+(\d+)(?:st|nd|rd|th)?$/i,
-    // "BuildingName, StreetName and StreetNumber"
-    /^(.+?),\s*(.+?)\s+and\s+(\d+)(?:st|nd|rd|th)?$/i
+    // "BuildingName, right by StreetName and StreetNumber" - handles regular numbered streets
+    /^(.+?),\s*right by\s+(.+?)\s+and\s+(\d+)(?:st|nd|rd|th)?\.?$/i,
+    // "BuildingName, right by StreetName and City Limits" - handles city limits
+    /^(.+?),\s*right by\s+(.+?)\s+and\s+(Northern City Limits|Western City Limits)\.?$/i,
+    // "BuildingName, right by City Limits and StreetNumber" - handles limits as first part
+    /^(.+?),\s*right by\s+(Northern City Limits|Western City Limits)\s+and\s+(\d+)(?:st|nd|rd|th)?\.?$/i,
+    // "BuildingName at StreetName and StreetNumber" - regular numbered streets
+    /^(.+?)\s*at\s+(.+?)\s+and\s+(\d+)(?:st|nd|rd|th)?\.?$/i,
+    // "BuildingName at StreetName and City Limits" - handles city limits
+    /^(.+?)\s*at\s+(.+?)\s+and\s+(Northern City Limits|Western City Limits)\.?$/i,
+    // "BuildingName at City Limits and StreetNumber" - handles limits as first part
+    /^(.+?)\s*at\s+(Northern City Limits|Western City Limits)\s+and\s+(\d+)(?:st|nd|rd|th)?\.?$/i,
+    // "BuildingName on StreetName and StreetNumber" - regular numbered streets
+    /^(.+?)\s*on\s+(.+?)\s+and\s+(\d+)(?:st|nd|rd|th)?\.?$/i,
+    // "BuildingName on StreetName and City Limits" - handles city limits
+    /^(.+?)\s*on\s+(.+?)\s+and\s+(Northern City Limits|Western City Limits)\.?$/i,
+    // "BuildingName on City Limits and StreetNumber" - handles limits as first part
+    /^(.+?)\s*on\s+(Northern City Limits|Western City Limits)\s+and\s+(\d+)(?:st|nd|rd|th)?\.?$/i,
+    // "BuildingName, StreetName and StreetNumber" - regular numbered streets
+    /^(.+?),\s*(.+?)\s+and\s+(\d+)(?:st|nd|rd|th)?\.?$/i,
+    // "BuildingName, StreetName and City Limits" - handles city limits
+    /^(.+?),\s*(.+?)\s+and\s+(Northern City Limits|Western City Limits)\.?$/i,
+    // "BuildingName, City Limits and StreetNumber" - handles limits as first part
+    /^(.+?),\s*(Northern City Limits|Western City Limits)\s+and\s+(\d+)(?:st|nd|rd|th)?\.?$/i
   ];
 
-  for (const pattern of patterns) {
-    const match = description.match(pattern);
+  for (const [patternIndex, pattern] of patterns.entries()) {
+    const match = normalizedDescription.match(pattern);
     if (match) {
+      console.log(`✅ Pattern ${patternIndex + 1} matched:`, match);
+
       const buildingName = match[1].trim();
-      const streetName = match[2].trim();
-      const streetNumber = `${match[3]}th`;
+      let streetName: string;
+      let streetNumber: string;
+
+      // Handle the different pattern formats
+      if (match[3] && (match[3].includes('City Limits') || /^\d+/.test(match[3]))) {
+        // Patterns where the third match is either city limits or a number
+        streetName = match[2].trim();
+        streetNumber = match[3].includes('City Limits') ? match[3] : `${match[3]}th`;
+      } else if (match[2] && match[2].includes('City Limits')) {
+        // Patterns where the second match is city limits
+        streetName = match[2].trim();
+        streetNumber = match[3] ? `${match[3]}th` : '';
+      } else {
+        // Default case for regular numbered streets
+        streetName = match[2].trim();
+        streetNumber = match[3] ? `${match[3]}th` : '';
+      }
+
+      console.log(`📊 Parsed components:`, { buildingName, streetName, streetNumber });
+
+      // Validate street name exists (including city limits)
+      const isValidStreet = streetName === 'Northern City Limits' ||
+                           streetName === 'Western City Limits' ||
+                           STREET_NAMES.some(name => name.toLowerCase() === streetName.toLowerCase());
+
+      if (!isValidStreet) {
+        console.log(`❌ Street "${streetName}" not found in STREET_NAMES or city limits`);
+        console.log(`💡 Available streets starting with "${streetName.charAt(0).toLowerCase()}":`,
+          STREET_NAMES.filter(name => name.toLowerCase().startsWith(streetName.charAt(0).toLowerCase())));
+        return null;
+      }
 
       // Determine building type
       let buildingType: 'shop' | 'guild' = 'shop';
@@ -230,16 +300,22 @@ export function parseNaturalLanguageLocation(description: string): LocationRepor
         buildingType = 'guild';
       }
 
-      return {
+      console.log(`🏢 Building type determined: ${buildingType}`);
+
+      const result = {
         buildingName,
         buildingType,
         streetName,
         streetNumber,
         coordinate: parseLocationToCoordinate(streetName, streetNumber)
       };
+
+      console.log(`🎯 Final result:`, result);
+      return result;
     }
   }
 
+  console.log(`❌ No patterns matched for: "${description}"`);
   return null;
 }
 
