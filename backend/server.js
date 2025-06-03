@@ -169,7 +169,7 @@ app.post('/api/locations', async (req, res) => {
     const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
 
     // Validation
-    if (!building_name || !building_type || !coordinate_x || !coordinate_y) {
+    if (!building_name || !building_type) {
       logWarning('Location report submission failed - missing required fields', {
         client_ip: clientIP,
         building_name,
@@ -178,11 +178,26 @@ app.post('/api/locations', async (req, res) => {
         reporter: reporter_username || 'anonymous'
       });
       return res.status(400).json({
-        error: 'Missing required fields: building_name, building_type, coordinate_x, coordinate_y'
+        error: 'Missing required fields: building_name, building_type'
       });
     }
 
-    const validBuildingTypes = ['shop', 'guild', 'hunter', 'paladin', 'werewolf', 'item'];
+    // Coordinates are only required for location-based building types
+    const requiresLocation = !['blood_deity', 'rich_vampire'].includes(building_type);
+    if (requiresLocation && (!coordinate_x || !coordinate_y)) {
+      logWarning('Location report submission failed - missing coordinates for location-based type', {
+        client_ip: clientIP,
+        building_name,
+        building_type,
+        coordinates: { x: coordinate_x, y: coordinate_y },
+        reporter: reporter_username || 'anonymous'
+      });
+      return res.status(400).json({
+        error: 'coordinate_x and coordinate_y are required for location-based building types'
+      });
+    }
+
+    const validBuildingTypes = ['shop', 'guild', 'hunter', 'paladin', 'werewolf', 'item', 'blood_deity', 'rich_vampire'];
     if (!validBuildingTypes.includes(building_type)) {
       logWarning('Location report submission failed - invalid building type', {
         client_ip: clientIP,
@@ -466,6 +481,153 @@ app.get('/api/stats', async (req, res) => {
   } catch (error) {
     logError('Error fetching stats', error, {
       client_ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown'
+    });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get Blood Deities leaderboard
+app.get('/api/leaderboards/blood-deities', async (req, res) => {
+  try {
+    const { limit = 50 } = req.query;
+
+    const result = await pool.query(
+      'SELECT * FROM blood_deities_leaderboard LIMIT $1',
+      [parseInt(limit)]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    logError('Error fetching blood deities leaderboard', error, {
+      client_ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown',
+      limit: req.query.limit
+    });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get Rich Vampires leaderboard
+app.get('/api/leaderboards/rich-vampires', async (req, res) => {
+  try {
+    const { limit = 50 } = req.query;
+
+    const result = await pool.query(
+      'SELECT * FROM rich_vampires_leaderboard LIMIT $1',
+      [parseInt(limit)]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    logError('Error fetching rich vampires leaderboard', error, {
+      client_ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown',
+      limit: req.query.limit
+    });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Submit or update blood deity entry
+app.post('/api/leaderboards/blood-deities', async (req, res) => {
+  try {
+    const { vampire_name, blood_amount, reporter_username } = req.body;
+    const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+
+    if (!vampire_name || blood_amount === undefined || blood_amount === null) {
+      logWarning('Blood deity submission failed - missing required fields', {
+        client_ip: clientIP,
+        vampire_name,
+        blood_amount,
+        reporter: reporter_username || 'anonymous'
+      });
+      return res.status(400).json({
+        error: 'Missing required fields: vampire_name, blood_amount'
+      });
+    }
+
+    if (typeof blood_amount !== 'number' || blood_amount < 0) {
+      logWarning('Blood deity submission failed - invalid blood amount', {
+        client_ip: clientIP,
+        vampire_name,
+        blood_amount,
+        reporter: reporter_username || 'anonymous'
+      });
+      return res.status(400).json({
+        error: 'blood_amount must be a non-negative number'
+      });
+    }
+
+    const result = await pool.query(`
+      INSERT INTO blood_deities (vampire_name, blood_amount, reporter_username)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (vampire_name)
+      DO UPDATE SET
+        blood_amount = EXCLUDED.blood_amount,
+        last_updated = CURRENT_TIMESTAMP,
+        reporter_username = EXCLUDED.reporter_username
+      RETURNING *
+    `, [vampire_name, blood_amount, reporter_username || null]);
+
+    const bloodDeity = result.rows[0];
+
+    logInfo('Blood deity entry submitted/updated', {
+      vampire_name: bloodDeity.vampire_name,
+      blood_amount: bloodDeity.blood_amount,
+      reporter: bloodDeity.reporter_username || 'anonymous',
+      client_ip: clientIP
+    });
+
+    res.status(201).json(bloodDeity);
+  } catch (error) {
+    logError('Error submitting blood deity', error, {
+      client_ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown',
+      vampire_name: req.body.vampire_name,
+      reporter: req.body.reporter_username || 'anonymous'
+    });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Submit or update rich vampire entry
+app.post('/api/leaderboards/rich-vampires', async (req, res) => {
+  try {
+    const { vampire_name, reporter_username } = req.body;
+    const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+
+    if (!vampire_name) {
+      logWarning('Rich vampire submission failed - missing required fields', {
+        client_ip: clientIP,
+        vampire_name,
+        reporter: reporter_username || 'anonymous'
+      });
+      return res.status(400).json({
+        error: 'Missing required field: vampire_name'
+      });
+    }
+
+    const result = await pool.query(`
+      INSERT INTO rich_vampires (vampire_name, reporter_username)
+      VALUES ($1, $2)
+      ON CONFLICT (vampire_name)
+      DO UPDATE SET
+        last_updated = CURRENT_TIMESTAMP,
+        reporter_username = EXCLUDED.reporter_username
+      RETURNING *
+    `, [vampire_name, reporter_username || null]);
+
+    const richVampire = result.rows[0];
+
+    logInfo('Rich vampire entry submitted/updated', {
+      vampire_name: richVampire.vampire_name,
+      reporter: richVampire.reporter_username || 'anonymous',
+      client_ip: clientIP
+    });
+
+    res.status(201).json(richVampire);
+  } catch (error) {
+    logError('Error submitting rich vampire', error, {
+      client_ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown',
+      vampire_name: req.body.vampire_name,
+      reporter: req.body.reporter_username || 'anonymous'
     });
     res.status(500).json({ error: 'Internal server error' });
   }

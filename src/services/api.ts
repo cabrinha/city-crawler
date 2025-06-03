@@ -1,4 +1,4 @@
-import type { LocationReport, ReportedLocation, TopContributor, DatabaseStats } from '../types/game';
+import type { LocationReport, ReportedLocation, TopContributor, DatabaseStats, BloodDeity, RichVampire } from '../types/game';
 
 // Use environment variable or default to relative path for k8s
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || '/api';
@@ -42,7 +42,7 @@ export class ApiService {
     const data = await this.request<Array<{
       id: number;
       building_name: string;
-      building_type: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item';
+      building_type: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item' | 'blood_deity' | 'rich_vampire';
       custom_item_name?: string;
       coordinate_x: number;
       coordinate_y: number;
@@ -77,7 +77,7 @@ export class ApiService {
     const data = await this.request<{
       id: number;
       building_name: string;
-      building_type: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item';
+      building_type: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item' | 'blood_deity' | 'rich_vampire';
       custom_item_name?: string;
       coordinate_x: number;
       coordinate_y: number;
@@ -129,7 +129,7 @@ export class ApiService {
     const data = await this.request<{
       id: number;
       building_name: string;
-      building_type: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item';
+      building_type: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item' | 'blood_deity' | 'rich_vampire';
       custom_item_name?: string;
       coordinate_x: number;
       coordinate_y: number;
@@ -201,5 +201,98 @@ export class ApiService {
   // Health check
   static async healthCheck(): Promise<{ status: string; timestamp: string; database: string }> {
     return this.request<{ status: string; timestamp: string; database: string }>('/health');
+  }
+
+  // Get Blood Deities leaderboard
+  static async getBloodDeities(limit = 50): Promise<BloodDeity[]> {
+    const params = new URLSearchParams();
+    params.append('limit', limit.toString());
+
+    const data = await this.request<Array<{
+      vampire_name: string;
+      blood_amount: number;
+      last_updated: string;
+      reporter_username?: string;
+      rank: number;
+    }>>(`/api/leaderboards/blood-deities?${params.toString()}`);
+
+    return data.map(item => ({
+      vampire_name: item.vampire_name,
+      blood_amount: item.blood_amount,
+      last_updated: new Date(item.last_updated),
+      reporter_username: item.reporter_username,
+      rank: item.rank,
+    }));
+  }
+
+  // Get Rich Vampires leaderboard
+  static async getRichVampires(limit = 50): Promise<RichVampire[]> {
+    const params = new URLSearchParams();
+    params.append('limit', limit.toString());
+
+    const data = await this.request<Array<{
+      vampire_name: string;
+      last_updated: string;
+      reporter_username?: string;
+      rank: number;
+    }>>(`/api/leaderboards/rich-vampires?${params.toString()}`);
+
+    return data.map(item => ({
+      vampire_name: item.vampire_name,
+      coins: 0, // Rich vampires don't report coins, but keep for interface compatibility
+      last_updated: new Date(item.last_updated),
+      reporter_username: item.reporter_username,
+      rank: item.rank,
+    }));
+  }
+
+  // Submit Blood Deity entry
+  static async submitBloodDeity(vampireName: string, bloodAmount: number, reporterUsername?: string): Promise<BloodDeity> {
+    const data = await this.request<{
+      id: number;
+      vampire_name: string;
+      blood_amount: number;
+      last_updated: string;
+      reporter_username?: string;
+    }>('/api/leaderboards/blood-deities', {
+      method: 'POST',
+      body: JSON.stringify({
+        vampire_name: vampireName,
+        blood_amount: bloodAmount,
+        reporter_username: reporterUsername,
+      }),
+    });
+
+    return {
+      vampire_name: data.vampire_name,
+      blood_amount: data.blood_amount,
+      last_updated: new Date(data.last_updated),
+      reporter_username: data.reporter_username,
+      rank: 0, // Will get updated when leaderboard is fetched
+    };
+  }
+
+  // Submit Rich Vampire entry
+  static async submitRichVampire(vampireName: string, reporterUsername?: string): Promise<RichVampire> {
+    const data = await this.request<{
+      id: number;
+      vampire_name: string;
+      last_updated: string;
+      reporter_username?: string;
+    }>('/api/leaderboards/rich-vampires', {
+      method: 'POST',
+      body: JSON.stringify({
+        vampire_name: vampireName,
+        reporter_username: reporterUsername,
+      }),
+    });
+
+    return {
+      vampire_name: data.vampire_name,
+      coins: 0, // Rich vampires don't report coins, but keep for interface compatibility
+      last_updated: new Date(data.last_updated),
+      reporter_username: data.reporter_username,
+      rank: 0, // Will get updated when leaderboard is fetched
+    };
   }
 }

@@ -3,6 +3,7 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { D3CityMap } from './components/D3CityMap';
 import { LocationReportsPage } from './components/LocationReportsPage';
+import { RankingsPage } from './components/RankingsPage';
 import type { GameState, Coordinate } from './types/game';
 
 const AppContainer = styled.div`
@@ -103,6 +104,7 @@ function App() {
   };
 
   const goToLocations = () => navigate('/locations');
+  const goToRankings = () => navigate('/rankings');
   const goToMap = () => navigate('/');
 
   const isMapPage = location.pathname === '/';
@@ -115,6 +117,9 @@ function App() {
           <GameStats>
             <NavigationButton onClick={goToLocations}>
               Locations
+            </NavigationButton>
+            <NavigationButton onClick={goToRankings}>
+              Rankings
             </NavigationButton>
             <GitHubLink
               href="https://github.com/cabrinha/city-crawler"
@@ -144,6 +149,10 @@ function App() {
         <Route
           path="/locations"
           element={<LocationReportsPage onBackToMap={goToMap} />}
+        />
+        <Route
+          path="/rankings"
+          element={<RankingsPage onBackToMap={goToMap} />}
         />
       </Routes>
     </AppContainer>

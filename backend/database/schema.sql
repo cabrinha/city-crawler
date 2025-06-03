@@ -15,10 +15,10 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS location_reports (
     id SERIAL PRIMARY KEY,
     building_name VARCHAR(100) NOT NULL,
-    building_type VARCHAR(20) NOT NULL CHECK (building_type IN ('shop', 'guild', 'hunter', 'paladin', 'werewolf', 'item')),
+    building_type VARCHAR(20) NOT NULL CHECK (building_type IN ('shop', 'guild', 'hunter', 'paladin', 'werewolf', 'item', 'blood_deity', 'rich_vampire')),
     custom_item_name VARCHAR(100), -- For custom items when building_type = 'item'
-    coordinate_x INTEGER NOT NULL CHECK (coordinate_x >= 1 AND coordinate_x <= 200),
-    coordinate_y INTEGER NOT NULL CHECK (coordinate_y >= 1 AND coordinate_y <= 200),
+    coordinate_x INTEGER CHECK (coordinate_x >= 1 AND coordinate_x <= 200), -- Made optional for certain types
+    coordinate_y INTEGER CHECK (coordinate_y >= 1 AND coordinate_y <= 200), -- Made optional for certain types
     street_name VARCHAR(50),
     street_number VARCHAR(10),
     guild_level INTEGER CHECK (guild_level IN (1, 2, 3)), -- Only for guilds
@@ -62,12 +62,12 @@ BEGIN
         WHEN 'guild' THEN
             -- Guilds expire after 5 days
             NEW.expires_at := NEW.reported_at + INTERVAL '5 days';
-        WHEN 'hunter', 'paladin', 'werewolf' THEN
-            -- Players expire after 24 hours (they move around)
-            NEW.expires_at := NEW.reported_at + INTERVAL '24 hours';
-        WHEN 'item' THEN
-            -- Items expire after 7 days (custom duration for flexibility)
-            NEW.expires_at := NEW.reported_at + INTERVAL '7 days';
+        WHEN 'hunter', 'paladin', 'werewolf', 'item' THEN
+            -- Players and items expire after 36 hours (they can be claimed/move around)
+            NEW.expires_at := NEW.reported_at + INTERVAL '36 hours';
+        WHEN 'blood_deity', 'rich_vampire' THEN
+            -- Blood deities and rich vampires never expire
+            NEW.expires_at := NULL;
         ELSE
             -- Default: 24 hours
             NEW.expires_at := NEW.reported_at + INTERVAL '24 hours';
@@ -153,3 +153,55 @@ FROM users
 WHERE total_reports > 0
 ORDER BY total_reports DESC, created_at ASC
 LIMIT 20;
+
+-- View for blood deities leaderboard
+CREATE OR REPLACE VIEW blood_deities_leaderboard AS
+SELECT
+    vampire_name,
+    blood_amount,
+    last_updated,
+    reporter_username,
+    RANK() OVER (ORDER BY blood_amount DESC, last_updated ASC) as rank
+FROM blood_deities
+ORDER BY blood_amount DESC, last_updated ASC
+LIMIT 50;
+
+-- View for rich vampires leaderboard
+CREATE OR REPLACE VIEW rich_vampires_leaderboard AS
+SELECT
+    vampire_name,
+    last_updated,
+    reporter_username,
+    ROW_NUMBER() OVER (ORDER BY vampire_name ASC) as rank
+FROM rich_vampires
+ORDER BY vampire_name ASC
+LIMIT 50;
+
+-- Blood Deities leaderboard table
+CREATE TABLE IF NOT EXISTS blood_deities (
+    id SERIAL PRIMARY KEY,
+    vampire_name VARCHAR(100) UNIQUE NOT NULL,
+    blood_amount BIGINT NOT NULL DEFAULT 0,
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    reporter_username VARCHAR(50),
+
+    -- Foreign key to users table
+    FOREIGN KEY (reporter_username) REFERENCES users(username) ON DELETE SET NULL
+);
+
+-- Rich Vampires leaderboard table
+CREATE TABLE IF NOT EXISTS rich_vampires (
+    id SERIAL PRIMARY KEY,
+    vampire_name VARCHAR(100) UNIQUE NOT NULL,
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    reporter_username VARCHAR(50),
+
+    -- Foreign key to users table
+    FOREIGN KEY (reporter_username) REFERENCES users(username) ON DELETE SET NULL
+);
+
+-- Indexes for leaderboard tables
+CREATE INDEX IF NOT EXISTS idx_blood_deities_blood_amount ON blood_deities(blood_amount DESC);
+CREATE INDEX IF NOT EXISTS idx_rich_vampires_name ON rich_vampires(vampire_name ASC);
+CREATE INDEX IF NOT EXISTS idx_blood_deities_reporter ON blood_deities(reporter_username);
+CREATE INDEX IF NOT EXISTS idx_rich_vampires_reporter ON rich_vampires(reporter_username);

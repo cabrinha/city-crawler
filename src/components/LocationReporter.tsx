@@ -165,7 +165,7 @@ interface LocationReporterProps {
 
 export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationReported }) => {
   const [activeTab, setActiveTab] = useState<'dropdown' | 'text'>('dropdown');
-  const [buildingType, setBuildingType] = useState<'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item'>('shop');
+  const [buildingType, setBuildingType] = useState<'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item' | 'blood_deity' | 'rich_vampire'>('shop');
   const [buildingName, setBuildingName] = useState('');
   const [customItemName, setCustomItemName] = useState('');
   const [streetName, setStreetName] = useState('');
@@ -173,6 +173,8 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
   const [reporterName, setReporterName] = useState('');
   const [notes, setNotes] = useState('');
   const [guildLevel, setGuildLevel] = useState<1 | 2 | 3>(1);
+  const [bloodAmount, setBloodAmount] = useState<number>(0);
+  const [coins, setCoins] = useState<number>(0);
   const [naturalLanguageInput, setNaturalLanguageInput] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -197,6 +199,9 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
     if (buildingType === 'item') {
       return ['Special Item']; // This will use custom item name
     }
+    if (buildingType === 'blood_deity' || buildingType === 'rich_vampire') {
+      return []; // These will use custom names/vampire names
+    }
     return [];
   };
 
@@ -218,10 +223,12 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
     setReporterName('');
     setNotes('');
     setGuildLevel(1);
+    setBloodAmount(0);
+    setCoins(0);
     setNaturalLanguageInput('');
   };
 
-  const handleBuildingTypeChange = (newType: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item') => {
+  const handleBuildingTypeChange = (newType: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item' | 'blood_deity' | 'rich_vampire') => {
     setBuildingType(newType);
     setBuildingName('');
     setCustomItemName('');
@@ -240,9 +247,51 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
       customItemName,
       reporterName,
       guildLevel,
+      bloodAmount,
+      coins,
       notes
     });
 
+    // Handle Blood Deity and Rich Vampire separately
+    if (buildingType === 'blood_deity') {
+      if (!buildingName || bloodAmount <= 0) {
+        setErrorMessage('Please enter a vampire name and blood amount.');
+        return;
+      }
+
+      try {
+        await ApiService.submitBloodDeity(buildingName, bloodAmount, reporterName || undefined);
+        setSuccessMessage(`Successfully reported ${buildingName} as a Blood Deity with ${bloodAmount} pints!`);
+        resetForm();
+        onLocationReported?.({} as ReportedLocation); // Trigger refresh
+        return;
+      } catch (error) {
+        console.error('❌ Blood deity submission failed:', error);
+        setErrorMessage('Error submitting blood deity. Please try again.');
+        return;
+      }
+    }
+
+    if (buildingType === 'rich_vampire') {
+      if (!buildingName) {
+        setErrorMessage('Please enter a vampire name.');
+        return;
+      }
+
+      try {
+        await ApiService.submitRichVampire(buildingName, reporterName || undefined);
+        setSuccessMessage(`Successfully reported ${buildingName} as a Rich Vampire!`);
+        resetForm();
+        onLocationReported?.({} as ReportedLocation); // Trigger refresh
+        return;
+      } catch (error) {
+        console.error('❌ Rich vampire submission failed:', error);
+        setErrorMessage('Error submitting rich vampire. Please try again.');
+        return;
+      }
+    }
+
+    // Regular location reporting logic for other building types
     // For hunter/paladin/werewolf, use the type as the building name
     const effectiveBuildingName = ['hunter', 'paladin', 'werewolf'].includes(buildingType)
       ? buildingType.charAt(0).toUpperCase() + buildingType.slice(1)
@@ -274,7 +323,9 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
         coordinate,
         reporterName: reporterName || undefined,
         notes: notes || undefined,
-        guildLevel: buildingType === 'guild' ? guildLevel : undefined
+        guildLevel: buildingType === 'guild' ? guildLevel : undefined,
+        bloodAmount,
+        coins
       };
 
       console.log('📤 Sending API request with data:', report);
@@ -347,7 +398,9 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
             ...parsedReport,
             coordinate: parsedReport.coordinate || parseLocationToCoordinate(parsedReport.streetName, parsedReport.streetNumber),
             reporterName: reporterName || undefined,
-            notes: notes || undefined
+            notes: notes || undefined,
+            bloodAmount,
+            coins
           };
 
           console.log(`📤 Sending API request for: ${parsedReport.buildingName}`);
@@ -413,7 +466,7 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
             <Label>Building Type</Label>
             <Select
               value={buildingType}
-              onChange={(e) => handleBuildingTypeChange(e.target.value as 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item')}
+              onChange={(e) => handleBuildingTypeChange(e.target.value as 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item' | 'blood_deity' | 'rich_vampire')}
             >
               <option value="shop">Shop</option>
               <option value="guild">Guild</option>
@@ -421,10 +474,12 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
               <option value="paladin">Paladin</option>
               <option value="werewolf">Werewolf</option>
               <option value="item">Item</option>
+              <option value="blood_deity">Blood Deity</option>
+              <option value="rich_vampire">Rich Vampire</option>
             </Select>
           </FormSection>
 
-          {!['hunter', 'paladin', 'werewolf'].includes(buildingType) && (
+          {!['hunter', 'paladin', 'werewolf', 'blood_deity', 'rich_vampire'].includes(buildingType) && (
             <FormSection>
               <Label>Building Name *</Label>
               <Select
@@ -467,35 +522,66 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
             </FormSection>
           )}
 
-          <FormRow>
+          {(buildingType === 'blood_deity' || buildingType === 'rich_vampire') && (
             <FormSection>
-              <Label>Street Name *</Label>
-              <Select
-                value={streetName}
-                onChange={(e) => setStreetName(e.target.value)}
+              <Label>Vampire Name *</Label>
+              <Input
+                type="text"
+                value={buildingName}
+                onChange={(e) => setBuildingName(e.target.value)}
+                placeholder="Enter the vampire's name..."
                 required
-              >
-                <option value="">Select a street...</option>
-                {STREET_NAMES.map(name => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </Select>
+              />
             </FormSection>
+          )}
 
+          {buildingType === 'blood_deity' && (
             <FormSection>
-              <Label>Street Number *</Label>
-              <Select
-                value={streetNumber}
-                onChange={(e) => setStreetNumber(e.target.value)}
+              <Label>Blood Amount (pints) *</Label>
+              <Input
+                type="number"
+                value={bloodAmount}
+                onChange={(e) => setBloodAmount(parseInt(e.target.value) || 0)}
+                placeholder="Enter blood amount..."
+                min="0"
                 required
-              >
-                <option value="">Select number...</option>
-                {streetNumbers.map(num => (
-                  <option key={num} value={num}>{num}</option>
-                ))}
-              </Select>
+              />
             </FormSection>
-          </FormRow>
+          )}
+
+          {/* Rich Vampires don't report coin amounts - just vampire names */}
+
+          {!['blood_deity', 'rich_vampire'].includes(buildingType) && (
+            <FormRow>
+              <FormSection>
+                <Label>Street Name *</Label>
+                <Select
+                  value={streetName}
+                  onChange={(e) => setStreetName(e.target.value)}
+                  required
+                >
+                  <option value="">Select a street...</option>
+                  {STREET_NAMES.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </Select>
+              </FormSection>
+
+              <FormSection>
+                <Label>Street Number *</Label>
+                <Select
+                  value={streetNumber}
+                  onChange={(e) => setStreetNumber(e.target.value)}
+                  required
+                >
+                  <option value="">Select number...</option>
+                  {streetNumbers.map(num => (
+                    <option key={num} value={num}>{num}</option>
+                  ))}
+                </Select>
+              </FormSection>
+            </FormRow>
+          )}
 
           <FormSection>
             <Label>Your Name (optional)</Label>

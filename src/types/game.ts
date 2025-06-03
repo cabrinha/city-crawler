@@ -13,7 +13,7 @@ export interface Building {
 export interface ReportedLocation {
   id: string;
   buildingName: string;
-  buildingType: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item';
+  buildingType: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item' | 'blood_deity' | 'rich_vampire';
   customItemName?: string; // For custom items when buildingType = 'item'
   coordinate: Coordinate;
   reportedAt: Date;
@@ -26,7 +26,7 @@ export interface ReportedLocation {
 
 export interface LocationReport {
   buildingName: string;
-  buildingType: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item';
+  buildingType: 'shop' | 'guild' | 'hunter' | 'paladin' | 'werewolf' | 'item' | 'blood_deity' | 'rich_vampire';
   customItemName?: string; // For custom items when buildingType = 'item'
   streetName: string;
   streetNumber: string;
@@ -34,6 +34,8 @@ export interface LocationReport {
   reporterName?: string;
   notes?: string;
   guildLevel?: 1 | 2 | 3; // Guild level for guild buildings
+  bloodAmount?: number; // For blood deities
+  coins?: number; // For rich vampires
 }
 
 export interface TopContributor {
@@ -79,4 +81,20 @@ export interface MapViewport {
   centerY: number;
   zoom: number;
   tileSize: number;
+}
+
+export interface BloodDeity {
+  vampire_name: string;
+  blood_amount: number;
+  last_updated: Date;
+  reporter_username?: string;
+  rank: number;
+}
+
+export interface RichVampire {
+  vampire_name: string;
+  coins: number;
+  last_updated: Date;
+  reporter_username?: string;
+  rank: number;
 }

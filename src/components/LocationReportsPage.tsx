@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { LocationReporter } from './LocationReporter';
 import { LocationListings } from './LocationListings';
@@ -17,15 +17,49 @@ const PageTitle = styled.h1`
   font-size: 2.5em;
 `;
 
-// const Subtitle = styled.p`
-//   text-align: center;
-//   color: #ccc;
-//   margin-bottom: 40px;
-//   max-width: 800px;
-//   margin-left: auto;
-//   margin-right: auto;
-//   line-height: 1.6;
-// `;
+const CountdownContainer = styled.div`
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 0 auto 20px;
+  max-width: 700px;
+  text-align: center;
+`;
+
+const CountdownTitle = styled.h3`
+  color: #cc3333;
+  margin-bottom: 10px;
+  font-size: 1.2em;
+`;
+
+const CountdownGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+`;
+
+const CountdownItem = styled.div`
+  background: #000;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 10px;
+`;
+
+const CountdownLabel = styled.div`
+  color: #ccc;
+  font-size: 0.9em;
+  margin-bottom: 5px;
+`;
+
+const CountdownTime = styled.div`
+  color: #fff;
+  font-size: 1.1em;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+`;
 
 const TabNavigation = styled.div`
   display: flex;
@@ -55,28 +89,6 @@ const ContentContainer = styled.div`
   justify-content: center;
 `;
 
-// const InfoBox = styled.div`
-//   background: #1a1a1a;
-//   border: 1px solid #333;
-//   border-radius: 8px;
-//   padding: 20px;
-//   margin: 20px 0;
-//   max-width: 800px;
-//   margin-left: auto;
-//   margin-right: auto;
-// `;
-
-// const InfoTitle = styled.h3`
-//   color: #cc3333;
-//   margin-bottom: 15px;
-// `;
-
-// const InfoText = styled.p`
-//   color: #ccc;
-//   margin-bottom: 10px;
-//   line-height: 1.5;
-// `;
-
 const BackToMapButton = styled.button`
   position: fixed;
   top: 20px;
@@ -102,11 +114,79 @@ interface LocationReportsPageProps {
 export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBackToMap }) => {
   const [activeTab, setActiveTab] = useState<'report' | 'listings'>('report');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [countdown, setCountdown] = useState({ shops: '', guilds: '' });
+
+  const calculateCountdown = () => {
+    const now = new Date();
+    const utcNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
+
+    // Calculate next shop expiration (10:40 GMT and 22:40 GMT)
+    const nextShopExpiration = new Date(utcNow);
+    const currentHour = utcNow.getUTCHours();
+    const currentMinute = utcNow.getUTCMinutes();
+
+    if (currentHour < 10 || (currentHour === 10 && currentMinute < 40)) {
+      // Next is today at 10:40
+      nextShopExpiration.setUTCHours(10, 40, 0, 0);
+    } else if (currentHour < 22 || (currentHour === 22 && currentMinute < 40)) {
+      // Next is today at 22:40
+      nextShopExpiration.setUTCHours(22, 40, 0, 0);
+    } else {
+      // Next is tomorrow at 10:40
+      nextShopExpiration.setUTCDate(nextShopExpiration.getUTCDate() + 1);
+      nextShopExpiration.setUTCHours(10, 40, 0, 0);
+    }
+
+    // Calculate next guild expiration (00:05 GMT, varies 3-5 days)
+    // For simplicity, let's assume next expiration is in 3 days at 00:05
+    const nextGuildExpiration = new Date(utcNow);
+    nextGuildExpiration.setUTCDate(nextGuildExpiration.getUTCDate() + 3);
+    nextGuildExpiration.setUTCHours(0, 5, 0, 0);
+
+    // Calculate time differences
+    const shopDiff = nextShopExpiration.getTime() - utcNow.getTime();
+    const guildDiff = nextGuildExpiration.getTime() - utcNow.getTime();
+
+    // Format countdowns
+    const formatTime = (ms: number) => {
+      const totalSeconds = Math.floor(ms / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      if (hours > 24) {
+        const days = Math.floor(hours / 24);
+        const remainingHours = hours % 24;
+        return `${days}d ${remainingHours}h ${minutes}m ${seconds}s`;
+      }
+      return `${hours}h ${minutes}m ${seconds}s`;
+    };
+
+    setCountdown({
+      shops: shopDiff > 0 ? formatTime(shopDiff) : 'Moving now!',
+      guilds: guildDiff > 0 ? formatTime(guildDiff) : 'Moving now!'
+    });
+  };
+
+  useEffect(() => {
+    // Calculate initial countdown
+    calculateCountdown();
+
+    // Update every second
+    const interval = setInterval(calculateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLocationReported = () => {
     // Refresh the listings when a new location is reported
     setRefreshKey(prev => prev + 1);
     setActiveTab('listings'); // Switch to listings to show the new report
+  };
+
+  const handleLocationUpdated = () => {
+    // Refresh when locations are updated
+    setRefreshKey(prev => prev + 1);
   };
 
   return (
@@ -118,6 +198,20 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
       )}
 
       <PageTitle>Report Shops & Guilds</PageTitle>
+
+      <CountdownContainer>
+        <CountdownTitle>Next Location Changes</CountdownTitle>
+        <CountdownGrid>
+          <CountdownItem>
+            <CountdownLabel>Shops moving in:</CountdownLabel>
+            <CountdownTime>{countdown.shops}</CountdownTime>
+          </CountdownItem>
+          <CountdownItem>
+            <CountdownLabel>Guilds moving in:</CountdownLabel>
+            <CountdownTime>{countdown.guilds}</CountdownTime>
+          </CountdownItem>
+        </CountdownGrid>
+      </CountdownContainer>
 
       <TabNavigation>
         <TabButton
@@ -141,6 +235,7 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
         {activeTab === 'listings' && (
           <LocationListings
             key={refreshKey}
+            onLocationUpdated={handleLocationUpdated}
           />
         )}
       </ContentContainer>

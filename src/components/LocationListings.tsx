@@ -132,6 +132,31 @@ const ReportedBy = styled.span`
   font-size: 0.7em;
 `;
 
+const TimeAgo = styled.span`
+  color: #888;
+  font-size: 0.7em;
+`;
+
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+`;
+
+const ActionButton = styled.button<{ variant: 'remove' }>`
+  background: ${props => props.variant === 'remove' ? '#5a2a2a' : '#2a5a2a'};
+  color: #fff;
+  border: none;
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.7em;
+
+  &:hover {
+    background: ${props => props.variant === 'remove' ? '#4a1a1a' : '#1a4a1a'};
+  }
+`;
+
 const EmptyState = styled.div`
   text-align: center;
   color: #666;
@@ -141,16 +166,21 @@ const EmptyState = styled.div`
 `;
 
 interface LocationListingsProps {
+  onLocationUpdated?: () => void;
 }
 
-export const LocationListings: React.FC<LocationListingsProps> = () => {
+export const LocationListings: React.FC<LocationListingsProps> = ({ onLocationUpdated }) => {
   const [locations, setLocations] = useState<ReportedLocation[]>([]);
   const [activeTab, setActiveTab] = useState<'guild' | 'shop' | 'other'>('guild');
 
   const loadLocations = async () => {
     try {
       const allLocations = await ApiService.getLocations();
-      setLocations(allLocations);
+      // Filter out blood deities and rich vampires as they don't have physical locations
+      const physicalLocations = allLocations.filter(location =>
+        !['blood_deity', 'rich_vampire'].includes(location.buildingType)
+      );
+      setLocations(physicalLocations);
     } catch (error) {
       console.error('Failed to load locations:', error);
     }
@@ -159,6 +189,36 @@ export const LocationListings: React.FC<LocationListingsProps> = () => {
   useEffect(() => {
     loadLocations();
   }, []);
+
+  const formatTimeAgo = (date: Date): string => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffHours < 1) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      return `${diffMinutes}m ago`;
+    }
+    if (diffHours < 24) {
+      return `${diffHours}h ago`;
+    }
+    return `${diffDays}d ago`;
+  };
+
+  const handleRemove = async (location: ReportedLocation) => {
+    if (window.confirm(`Remove ${location.buildingName}?`)) {
+      try {
+        await ApiService.deleteLocation(location.id);
+        await loadLocations();
+        if (onLocationUpdated) {
+          onLocationUpdated();
+        }
+      } catch (error) {
+        console.error('Failed to delete location:', error);
+      }
+    }
+  };
 
   // Group locations by type
   const guilds = locations.filter(l => l.buildingType === 'guild').sort((a, b) => {
@@ -177,26 +237,43 @@ export const LocationListings: React.FC<LocationListingsProps> = () => {
     confirmed: locations.filter(l => l.confidence === 'confirmed').length
   };
 
-  const renderLocationCard = (location: ReportedLocation, type: 'guild' | 'shop' | 'other') => (
-    <LocationCard key={location.id} type={type}>
-      <LocationName>
-        {location.buildingType === 'guild' && location.guildLevel
-          ? `${location.buildingName} ${location.guildLevel}`
-          : location.buildingName}
-      </LocationName>
-      <LocationDetails>
-        📍 {getLocationName(location.coordinate.x, location.coordinate.y)}
-        {location.buildingType !== 'guild' && location.buildingType !== 'shop' && (
-          <> • {location.buildingType}</>
+  const renderLocationCard = (location: ReportedLocation, type: 'guild' | 'shop' | 'other') => {
+    const showTimeAndRemove = ['hunter', 'paladin', 'werewolf', 'item'].includes(location.buildingType);
+
+    return (
+      <LocationCard key={location.id} type={type}>
+        <LocationName>
+          {location.buildingType === 'guild' && location.guildLevel
+            ? `${location.buildingName} ${location.guildLevel}`
+            : location.buildingName}
+        </LocationName>
+        <LocationDetails>
+          📍 {getLocationName(location.coordinate.x, location.coordinate.y)}
+          {location.buildingType !== 'guild' && location.buildingType !== 'shop' && (
+            <> • {location.buildingType}</>
+          )}
+        </LocationDetails>
+        <LocationMeta style={{ justifyContent: showTimeAndRemove ? 'space-between' : 'center' }}>
+          <ReportedBy>
+            Reported by {location.reporterName}
+          </ReportedBy>
+          {showTimeAndRemove && (
+            <TimeAgo>{formatTimeAgo(location.reportedAt)}</TimeAgo>
+          )}
+        </LocationMeta>
+        {showTimeAndRemove && (
+          <ActionButtons>
+            <ActionButton
+              variant="remove"
+              onClick={() => handleRemove(location)}
+            >
+              Remove
+            </ActionButton>
+          </ActionButtons>
         )}
-      </LocationDetails>
-      <LocationMeta style={{ justifyContent: 'center' }}>
-        <ReportedBy>
-          Reported by {location.reporterName}
-        </ReportedBy>
-      </LocationMeta>
-    </LocationCard>
-  );
+      </LocationCard>
+    );
+  };
 
   const getCurrentTabData = () => {
     switch (activeTab) {
