@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { D3CityMap } from './components/D3CityMap';
 import { LocationReportsPage } from './components/LocationReportsPage';
@@ -83,7 +84,8 @@ const GitHubLink = styled.a`
 `;
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'map' | 'reports'>('map');
+  const navigate = useNavigate();
+  const location = useLocation();
   const [gameState, setGameState] = useState<GameState>({
     playerLocation: { x: 50, y: 50 }, // Starting at center of the city
     actionPoints: 8,
@@ -100,17 +102,19 @@ function App() {
     }));
   };
 
-  const goToReports = () => setCurrentPage('reports');
-  const goToMap = () => setCurrentPage('map');
+  const goToLocations = () => navigate('/locations');
+  const goToMap = () => navigate('/');
+
+  const isMapPage = location.pathname === '/';
 
   return (
     <AppContainer>
-      {currentPage === 'map' && (
+      {isMapPage && (
         <Header>
           <Title>Vespertine's City Crawler</Title>
           <GameStats>
-            <NavigationButton onClick={goToReports}>
-              Report
+            <NavigationButton onClick={goToLocations}>
+              Locations
             </NavigationButton>
             <GitHubLink
               href="https://github.com/cabrinha/city-crawler"
@@ -127,16 +131,21 @@ function App() {
         </Header>
       )}
 
-      {currentPage === 'map' && (
-        <D3CityMap
-          playerLocation={gameState.playerLocation}
-          onPlayerLocationChange={handlePlayerLocationChange}
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <D3CityMap
+              playerLocation={gameState.playerLocation}
+              onPlayerLocationChange={handlePlayerLocationChange}
+            />
+          }
         />
-      )}
-
-      {currentPage === 'reports' && (
-        <LocationReportsPage onBackToMap={goToMap} />
-      )}
+        <Route
+          path="/locations"
+          element={<LocationReportsPage onBackToMap={goToMap} />}
+        />
+      </Routes>
     </AppContainer>
   );
 }
