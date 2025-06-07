@@ -137,11 +137,24 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
       nextShopExpiration.setUTCHours(10, 40, 0, 0);
     }
 
-    // Calculate next guild expiration (00:05 GMT, varies 3-5 days)
-    // For simplicity, let's assume next expiration is in 3 days at 00:05
+    // Calculate next guild movement (1st, 6th, 10th, 14th, 19th, 23rd, 27th at 12:00 AM UTC)
+    const guildMovementDates = [1, 6, 10, 14, 19, 23, 27];
     const nextGuildExpiration = new Date(utcNow);
-    nextGuildExpiration.setUTCDate(nextGuildExpiration.getUTCDate() + 3);
-    nextGuildExpiration.setUTCHours(0, 5, 0, 0);
+    const currentDay = utcNow.getUTCDate();
+
+    // Find the next guild movement date
+    let nextMovementDay = guildMovementDates.find(day => day > currentDay);
+
+    if (nextMovementDay) {
+      // Next movement is this month
+      nextGuildExpiration.setUTCDate(nextMovementDay);
+    } else {
+      // Next movement is first day of next month
+      nextGuildExpiration.setUTCMonth(nextGuildExpiration.getUTCMonth() + 1);
+      nextGuildExpiration.setUTCDate(guildMovementDates[0]); // 1st of next month
+    }
+
+    nextGuildExpiration.setUTCHours(0, 0, 0, 0); // 12:00 AM UTC
 
     // Calculate time differences
     const shopDiff = nextShopExpiration.getTime() - utcNow.getTime();

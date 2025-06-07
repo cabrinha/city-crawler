@@ -43,6 +43,11 @@ CREATE INDEX IF NOT EXISTS idx_location_reports_reported_at ON location_reports(
 -- Function to automatically set expiration times based on building type
 CREATE OR REPLACE FUNCTION set_expiration_time()
 RETURNS TRIGGER AS $$
+DECLARE
+    guild_movement_dates INTEGER[] := ARRAY[1, 6, 10, 14, 19, 23, 27];
+    current_day INTEGER;
+    next_movement_day INTEGER;
+    next_expiration TIMESTAMP WITH TIME ZONE;
 BEGIN
     -- Set expiration based on building type
     CASE NEW.building_type
@@ -60,8 +65,23 @@ BEGIN
                 END
             );
         WHEN 'guild' THEN
-            -- Guilds expire after 5 days
-            NEW.expires_at := NEW.reported_at + INTERVAL '5 days';
+            -- Guilds expire on specific dates (1st, 6th, 10th, 14th, 19th, 23rd, 27th at 12:00 AM UTC)
+            current_day := EXTRACT(DAY FROM (NOW() AT TIME ZONE 'UTC'));
+
+            -- Find the next guild movement date
+            SELECT MIN(day) INTO next_movement_day
+            FROM UNNEST(guild_movement_dates) AS day
+            WHERE day > current_day;
+
+            IF next_movement_day IS NOT NULL THEN
+                -- Next movement is this month
+                next_expiration := DATE_TRUNC('month', NOW() AT TIME ZONE 'UTC') + (next_movement_day - 1) * INTERVAL '1 day';
+            ELSE
+                -- Next movement is first day of next month
+                next_expiration := DATE_TRUNC('month', NOW() AT TIME ZONE 'UTC') + INTERVAL '1 month';
+            END IF;
+
+            NEW.expires_at := next_expiration;
         WHEN 'hunter', 'paladin', 'werewolf', 'item' THEN
             -- Players and items expire after 36 hours (they can be claimed/move around)
             NEW.expires_at := NEW.reported_at + INTERVAL '36 hours';
