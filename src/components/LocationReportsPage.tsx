@@ -118,12 +118,11 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
 
   const calculateCountdown = () => {
     const now = new Date();
-    const utcNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
 
     // Calculate next shop expiration (10:40 GMT and 22:40 GMT)
-    const nextShopExpiration = new Date(utcNow);
-    const currentHour = utcNow.getUTCHours();
-    const currentMinute = utcNow.getUTCMinutes();
+    const nextShopExpiration = new Date(now);
+    const currentHour = now.getUTCHours();
+    const currentMinute = now.getUTCMinutes();
 
     if (currentHour < 10 || (currentHour === 10 && currentMinute < 40)) {
       // Next is today at 10:40
@@ -139,8 +138,8 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
 
     // Calculate next guild movement (1st, 6th, 10th, 14th, 19th, 23rd, 27th at 12:00 AM UTC)
     const guildMovementDates = [1, 6, 10, 14, 19, 23, 27];
-    const nextGuildExpiration = new Date(utcNow);
-    const currentDay = utcNow.getUTCDate();
+    const nextGuildExpiration = new Date(now);
+    const currentDay = now.getUTCDate();
 
     // Find the next guild movement date
     let nextMovementDay = guildMovementDates.find(day => day > currentDay);
@@ -157,8 +156,8 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
     nextGuildExpiration.setUTCHours(0, 0, 0, 0); // 12:00 AM UTC
 
     // Calculate time differences
-    const shopDiff = nextShopExpiration.getTime() - utcNow.getTime();
-    const guildDiff = nextGuildExpiration.getTime() - utcNow.getTime();
+    const shopDiff = nextShopExpiration.getTime() - now.getTime();
+    const guildDiff = nextGuildExpiration.getTime() - now.getTime();
 
     // Format countdowns
     const formatTime = (ms: number) => {
