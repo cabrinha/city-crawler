@@ -181,7 +181,7 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
 
   const getFilteredBuildingNames = () => {
     if (buildingType === 'shop') {
-      return [...SHOP_NAMES, ...SPECIAL_SHOP_NAMES].sort();
+      return [...SHOP_NAMES].sort();
     }
     if (buildingType === 'guild') {
       return GUILD_NAMES.sort();
@@ -595,6 +595,7 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
                   required
                 >
                   <option value="">Select a street...</option>
+                  <option value="Western City Limits">Western City Limits</option>
                   {STREET_NAMES.map(name => (
                     <option key={name} value={name}>{name}</option>
                   ))}
@@ -609,6 +610,7 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
                   required
                 >
                   <option value="">Select number...</option>
+                  <option value="Northern City Limits">Northern City Limits</option>
                   {streetNumbers.map(num => (
                     <option key={num} value={num}>{num}</option>
                   ))}
