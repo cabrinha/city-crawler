@@ -5,7 +5,6 @@ import { ApiService } from '../services/api';
 import {
   SHOP_NAMES,
   GUILD_NAMES,
-  SPECIAL_SHOP_NAMES,
   parseNaturalLanguageLocation,
   parseLocationToCoordinate
 } from '../data/reportedLocations';
