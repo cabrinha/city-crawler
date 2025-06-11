@@ -232,18 +232,31 @@ app.post('/api/locations', async (req, res) => {
       });
     }
 
-    // Remove any existing reports for the same building at the same location
-    const deactivateResult = await pool.query(
-      'UPDATE location_reports SET is_active = FALSE WHERE building_name = $1 AND coordinate_x = $2 AND coordinate_y = $3 AND is_active = TRUE RETURNING id',
-      [building_name, coordinate_x, coordinate_y]
-    );
+    // Remove any existing reports for the same building (overwrite previous reports)
+    let deactivateQuery = 'UPDATE location_reports SET is_active = FALSE WHERE building_name = $1 AND building_type = $2 AND is_active = TRUE';
+    let deactivateParams = [building_name, building_type];
+
+    // For guilds, also match guild level to handle "Allurists Guild 1" vs "Allurists Guild 2" separately
+    if (building_type === 'guild' && guild_level) {
+      deactivateQuery += ' AND guild_level = $3';
+      deactivateParams.push(guild_level);
+    }
+
+    deactivateQuery += ' RETURNING id, coordinate_x, coordinate_y';
+
+    const deactivateResult = await pool.query(deactivateQuery, deactivateParams);
 
     if (deactivateResult.rows.length > 0) {
-      logInfo('Deactivated existing reports for same building/location', {
+      logInfo('Deactivated existing reports for same building (overwriting)', {
         building_name,
-        coordinates: { x: coordinate_x, y: coordinate_y },
+        building_type,
+        guild_level,
         deactivated_count: deactivateResult.rows.length,
-        deactivated_ids: deactivateResult.rows.map(r => r.id)
+        deactivated_reports: deactivateResult.rows.map(r => ({
+          id: r.id,
+          old_coordinates: { x: r.coordinate_x, y: r.coordinate_y }
+        })),
+        new_coordinates: { x: coordinate_x, y: coordinate_y }
       });
     }
 
