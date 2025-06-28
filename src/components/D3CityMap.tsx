@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import styled from 'styled-components';
 import type { Coordinate, Building, NavigationState, Route, RouteStep } from '../types/game';
-import { CITY_SIZE, getBuildingAt, getLocationName, getDistanceScore, BUILDINGS, STREET_NAMES, getStreetName, getStreetNumber } from '../data/cityData';
+import { CITY_SIZE, getBuildingAt, getLocationName, getDistanceScore, BUILDINGS } from '../data/cityData';
 import { ApiService } from '../services/api';
 import type { ReportedLocation } from '../types/game';
 import { NavigationPanel } from './NavigationPanel';
@@ -32,18 +32,7 @@ const NavigationContainer = styled.div`
   z-index: 100;
 `;
 
-const PlayerLocationWidget = styled.div`
-  position: absolute;
-  top: 220px;
-  left: 20px;
-  z-index: 100;
-  background-color: rgba(0, 0, 0, 0.9);
-  color: white;
-  padding: 15px;
-  border-radius: 8px;
-  border: 1px solid #666;
-  width: 200px;
-`;
+
 
 const NearestBuildingsWidget = styled.div`
   position: absolute;
@@ -90,62 +79,7 @@ const WidgetContent = styled.div<{ $isVisible: boolean }>`
   transition: max-height 0.3s ease, padding 0.3s ease;
 `;
 
-const InputGroup = styled.div`
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-  align-items: center;
-`;
 
-/* const Input = styled.input`
-  width: 60px;
-  padding: 5px;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  border: 1px solid #666;
-  border-radius: 4px;
-  text-align: center;
-
-  &:focus {
-    outline: none;
-    border-color: #999;
-  }
-`; */
-
-const Select = styled.select`
-  padding: 5px;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  border: 1px solid #666;
-  border-radius: 4px;
-  flex: 1;
-
-  &:focus {
-    outline: none;
-    border-color: #999;
-  }
-
-  option {
-    background-color: #000;
-    color: white;
-  }
-`;
-
-const Label = styled.label`
-  font-size: 12px;
-  color: #ccc;
-  min-width: 20px;
-`;
-
-const CurrentLocationText = styled.div`
-  margin-top: 10px;
-  font-size: 12px;
-  color: #ccc;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-  line-height: 1.3;
-`;
 
 const BuildingList = styled.div`
   margin-bottom: 15px;
@@ -229,7 +163,6 @@ interface TileData {
 
 interface D3CityMapProps {
   playerLocation?: Coordinate;
-  onPlayerLocationChange?: (location: Coordinate) => void;
 }
 
 // Utility function to calculate Manhattan distance
@@ -249,9 +182,61 @@ const findNearestBuildings = (playerLocation: Coordinate, buildingType: string):
     .slice(0, 3); // Return top 3 nearest
 };
 
+// Helper function to fit the entire map to view
+const fitMapToView = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, zoom: d3.ZoomBehavior<SVGSVGElement, unknown>, width: number, height: number, tileSize: number) => {
+  const mapWidth = CITY_SIZE * tileSize;
+  const mapHeight = CITY_SIZE * tileSize;
+
+  const scale = Math.min(width / mapWidth, height / mapHeight) * 0.9; // 90% of available space
+  const centerX = (width - mapWidth * scale) / 2;
+  const centerY = (height - mapHeight * scale) / 2;
+
+  svg.transition()
+    .duration(1000)
+    .call(zoom.transform, d3.zoomIdentity.translate(centerX, centerY).scale(scale));
+};
+
+// Helper function to center on a specific location
+const centerOnLocation = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, zoom: d3.ZoomBehavior<SVGSVGElement, unknown>, location: Coordinate, width: number, height: number, tileSize: number) => {
+  const scale = 2;
+  const centerX = width / 2 - (location.x - 1) * tileSize * scale;
+  const centerY = height / 2 - (location.y - 1) * tileSize * scale;
+
+  svg.transition()
+    .duration(1000)
+    .call(zoom.transform, d3.zoomIdentity.translate(centerX, centerY).scale(scale));
+};
+
+// Helper function to fit a route to view
+const fitRouteToView = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, zoom: d3.ZoomBehavior<SVGSVGElement, unknown>, route: Route, width: number, height: number, tileSize: number) => {
+  if (route.steps.length === 0) return;
+
+  // Find bounding box of the route
+  const coordinates = route.steps.map(step => step.coordinate);
+  const minX = Math.min(...coordinates.map(c => c.x));
+  const maxX = Math.max(...coordinates.map(c => c.x));
+  const minY = Math.min(...coordinates.map(c => c.y));
+  const maxY = Math.max(...coordinates.map(c => c.y));
+
+  // Add padding
+  const padding = 5;
+  const routeWidth = (maxX - minX + 2 * padding) * tileSize;
+  const routeHeight = (maxY - minY + 2 * padding) * tileSize;
+
+  // Calculate scale to fit route with padding
+  const scale = Math.min(width / routeWidth, height / routeHeight) * 0.8; // 80% of available space
+
+  // Center on the middle of the route
+  const centerX = width / 2 - ((minX + maxX) / 2 - 1) * tileSize * scale;
+  const centerY = height / 2 - ((minY + maxY) / 2 - 1) * tileSize * scale;
+
+  svg.transition()
+    .duration(1000)
+    .call(zoom.transform, d3.zoomIdentity.translate(centerX, centerY).scale(scale));
+};
+
 export const D3CityMap: React.FC<D3CityMapProps> = ({
-  playerLocation = { x: 178, y: 150 }, // Center at city block near Torment and 75th
-  onPlayerLocationChange
+  playerLocation
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
@@ -261,8 +246,6 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   const [selectedCoordinates, setSelectedCoordinates] = useState<Coordinate | null>(null);
   const [isCoordinatesLocked, setIsCoordinatesLocked] = useState(false);
   const [isNearestBuildingsVisible, setIsNearestBuildingsVisible] = useState(true);
-  const [playerStreetName, setPlayerStreetName] = useState('');
-  const [playerStreetNumber, setPlayerStreetNumber] = useState('');
   const [reportedLocations, setReportedLocations] = useState<ReportedLocation[]>([]);
   const [navigationState, setNavigationState] = useState<NavigationState>({
     isNavigating: false,
@@ -282,42 +265,14 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     loadReportedLocations();
   }, []);
 
-  // Helper function to convert street name to coordinate
-  const streetNameToCoordinate = (streetName: string): number => {
-    if (streetName === "Western City Limits") return 1;
-    const index = STREET_NAMES.indexOf(streetName);
-    if (index === -1) return 1;
-    return index * 2 + 2; // Aardvark (index 0) maps to X=2, Alder (index 1) maps to X=4, etc.
-  };
 
-  // Helper function to convert street number to coordinate
-  const streetNumberToCoordinate = (streetNumber: string): number => {
-    if (streetNumber === "Northern City Limits") return 1;
-    const match = streetNumber.match(/(\d+)/);
-    if (!match) return 1;
-    const num = Number.parseInt(match[1]);
-    return (num - 1) * 2 + 2; // 1st maps to Y=2, 2nd maps to Y=4, etc.
-  };
 
-  // Calculate nearest buildings
-  const nearestBanks = findNearestBuildings(playerLocation, 'bank');
-  const nearestPubs = findNearestBuildings(playerLocation, 'pub');
-  const nearestTransit = findNearestBuildings(playerLocation, 'transit');
+  // Calculate nearest buildings (only if player location is set)
+  const nearestBanks = playerLocation ? findNearestBuildings(playerLocation, 'bank') : [];
+  const nearestPubs = playerLocation ? findNearestBuildings(playerLocation, 'pub') : [];
+  const nearestTransit = playerLocation ? findNearestBuildings(playerLocation, 'transit') : [];
 
-  const handlePlayerLocationUpdate = () => {
-    const x = streetNameToCoordinate(playerStreetName);
-    const y = streetNumberToCoordinate(playerStreetNumber);
 
-    if (x >= 1 && x <= CITY_SIZE && y >= 1 && y <= CITY_SIZE && onPlayerLocationChange) {
-      onPlayerLocationChange({ x, y });
-    }
-  };
-
-  // Update street selections when playerLocation prop changes
-  useEffect(() => {
-    setPlayerStreetName(getStreetName(playerLocation.x));
-    setPlayerStreetNumber(getStreetNumber(playerLocation.y));
-  }, [playerLocation.x, playerLocation.y]);
 
   // Define colors to match the actual game CSS from blood.css
   const colors = {
@@ -352,7 +307,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
           loc.coordinate.x === x && loc.coordinate.y === y
         );
         const distanceScore = getDistanceScore(x, y);
-        const isPlayer = playerLocation.x === x && playerLocation.y === y;
+        const isPlayer = playerLocation ? (playerLocation.x === x && playerLocation.y === y) : false;
 
         // Determine tile type based on coordinate pattern
         let tileType: 'street' | 'city' | 'intersect';
@@ -533,8 +488,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .attr('stroke-width', 0.5)
       .style('display', 'none'); // Hidden by default, shown at high zoom
 
-    // Add player marker
-    const playerMarker = g.append('text')
+    // Add player marker (only if player location is set)
+    const playerMarker = playerLocation ? g.append('text')
       .attr('class', 'player-marker')
       .attr('x', (playerLocation.x - 1) * tileSize + tileSize / 2)
       .attr('y', (playerLocation.y - 1) * tileSize + tileSize / 2)
@@ -543,7 +498,32 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .attr('fill', 'white')
       .attr('font-size', '12px')
       .attr('font-weight', 'bold')
-      .text('★');
+      .text('★') : g.append('g'); // Empty group if no player location
+
+    // Add start location marker (when "Calculate Route" is clicked)
+    const startLocationMarker = (navigationState.isNavigating && navigationState.startLocation) ?
+      g.append('circle')
+        .attr('class', 'start-location-marker')
+        .attr('cx', (navigationState.startLocation.x - 1) * tileSize + tileSize / 2)
+        .attr('cy', (navigationState.startLocation.y - 1) * tileSize + tileSize / 2)
+        .attr('r', tileSize * 0.4)
+        .attr('fill', '#00ff00')
+        .attr('stroke', 'white')
+        .attr('stroke-width', 2)
+        .style('opacity', 0.8) : g.append('g'); // Empty group if no start location
+
+    // Add start location marker text
+    const startLocationText = (navigationState.isNavigating && navigationState.startLocation) ?
+      g.append('text')
+        .attr('class', 'start-location-text')
+        .attr('x', (navigationState.startLocation.x - 1) * tileSize + tileSize / 2)
+        .attr('y', (navigationState.startLocation.y - 1) * tileSize + tileSize / 2)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('fill', 'black')
+        .attr('font-size', '10px')
+        .attr('font-weight', 'bold')
+        .text('START') : g.append('g'); // Empty group if no start location
 
     // Add route visualization if navigation is active
     if (navigationState.showRouteOnMap && navigationState.currentRoute) {
@@ -684,6 +664,10 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         reportedLocationIndicators.style('display', transform.k > indicatorThreshold ? 'block' : 'none');
         playerMarker.style('display', transform.k > detailThreshold ? 'block' : 'none');
 
+        // Show start location marker at all zoom levels when navigation is active
+        startLocationMarker.style('display', navigationState.isNavigating ? 'block' : 'none');
+        startLocationText.style('display', navigationState.isNavigating ? 'block' : 'none');
+
         // Show/hide street signs and street names based on zoom level
         streetSigns.style('display', transform.k > streetSignThreshold ? 'block' : 'none');
         streetNameLabels.style('display', transform.k > streetSignThreshold ? 'block' : 'none');
@@ -728,14 +712,17 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     zoomBehaviorRef.current = zoom;
     svg.call(zoom);
 
-    // Center on player initially with smooth transition
-    const initialScale = 2;
-    const centerX = width / 2 - (playerLocation.x - 1) * tileSize * initialScale;
-    const centerY = height / 2 - (playerLocation.y - 1) * tileSize * initialScale;
-
-    svg.transition()
-      .duration(1000)
-      .call(zoom.transform, d3.zoomIdentity.translate(centerX, centerY).scale(initialScale));
+    // Set initial view based on navigation state
+    if (navigationState.showRouteOnMap && navigationState.currentRoute) {
+      // Show entire route when "Use This Route" is clicked
+      fitRouteToView(svg, zoom, navigationState.currentRoute, width, height, tileSize);
+    } else if (navigationState.isNavigating && navigationState.startLocation) {
+      // Center on start location when "Calculate Route" is clicked
+      centerOnLocation(svg, zoom, navigationState.startLocation, width, height, tileSize);
+    } else {
+      // Default: show entire map when app starts up
+      fitMapToView(svg, zoom, width, height, tileSize);
+    }
 
     // Add tooltip functionality
     tiles.on('mouseover', function(event, d: TileData) {
@@ -824,21 +811,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     );
   };
 
-  const handleCenterPlayer = () => {
-    if (!svgRef.current || !zoomBehaviorRef.current) return;
-    const svg = d3.select(svgRef.current);
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    const scale = 3;
 
-    const centerX = width / 2 - (playerLocation.x - 1) * tileSize * scale;
-    const centerY = height / 2 - (playerLocation.y - 1) * tileSize * scale;
-
-    svg.transition().duration(750).call(
-      zoomBehaviorRef.current.transform,
-      d3.zoomIdentity.translate(centerX, centerY).scale(scale)
-    );
-  };
 
   const handleNavigationChange = (newState: NavigationState) => {
     setNavigationState(newState);
@@ -850,6 +823,14 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       currentRoute: route,
       showRouteOnMap: true
     }));
+
+    // Immediately fit the route to view when a route is selected
+    if (svgRef.current && zoomBehaviorRef.current) {
+      const svg = d3.select(svgRef.current);
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      fitRouteToView(svg, zoomBehaviorRef.current, route, width, height, tileSize);
+    }
   };
 
   return (
@@ -859,7 +840,6 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       <Controls>
         <Button onClick={handleZoomIn}>Zoom In (+)</Button>
         <Button onClick={handleZoomOut}>Zoom Out (-)</Button>
-        <Button onClick={handleCenterPlayer}>Center on Player</Button>
       </Controls>
 
       <NavigationContainer>
@@ -871,59 +851,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         />
       </NavigationContainer>
 
-      <PlayerLocationWidget>
-        <h3 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Player Location</h3>
-        <InputGroup>
-          <Label>Street:</Label>
-          <Select
-            value={playerStreetName}
-            onChange={(e) => setPlayerStreetName(e.target.value)}
-          >
-            <option value="Western City Limits">Western City Limits</option>
-            {STREET_NAMES.map((streetName) => (
-              <option key={streetName} value={streetName}>
-                {streetName}
-              </option>
-            ))}
-          </Select>
-        </InputGroup>
-        <InputGroup>
-          <Label>Number:</Label>
-          <Select
-            value={playerStreetNumber}
-            onChange={(e) => setPlayerStreetNumber(e.target.value)}
-          >
-            <option value="Northern City Limits">Northern City Limits</option>
-            {Array.from({ length: 100 }, (_, i) => {
-              const num = i + 1;
-              const lastDigit = num % 10;
-              const lastTwoDigits = num % 100;
 
-              // Handle special cases: 11th, 12th, 13th
-              let suffix = 'th';
-              if (!(lastTwoDigits >= 11 && lastTwoDigits <= 13)) {
-                switch (lastDigit) {
-                  case 1: suffix = 'st'; break;
-                  case 2: suffix = 'nd'; break;
-                  case 3: suffix = 'rd'; break;
-                }
-              }
-
-              return `${num}${suffix}`;
-            }).map((streetNumber) => (
-              <option key={streetNumber} value={streetNumber}>
-                {streetNumber}
-              </option>
-            ))}
-          </Select>
-        </InputGroup>
-        <Button onClick={handlePlayerLocationUpdate} style={{ width: '100%', fontSize: '12px' }}>
-          Go to Location
-        </Button>
-        <CurrentLocationText>
-          Current: {getLocationName(playerLocation.x, playerLocation.y)}
-        </CurrentLocationText>
-      </PlayerLocationWidget>
 
       <NearestBuildingsWidget>
         <WidgetHeader

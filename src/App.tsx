@@ -5,7 +5,7 @@ import { D3CityMap } from './components/D3CityMap';
 import { LocationReportsPage } from './components/LocationReportsPage';
 import { RankingsPage } from './components/RankingsPage';
 import { updateMetaTags } from './main';
-import type { GameState, Coordinate } from './types/game';
+import type { GameState } from './types/game';
 
 const AppContainer = styled.div`
   width: 100%;
@@ -88,8 +88,8 @@ const GitHubLink = styled.a`
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [gameState, setGameState] = useState<GameState>({
-    playerLocation: { x: 50, y: 50 }, // Starting at center of the city
+  const [gameState] = useState<GameState>({
+    playerLocation: { x: 0, y: 0 }, // No default location - user must set their position
     actionPoints: 8,
     maxActionPoints: 90,
     bloodPints: 105449,
@@ -97,12 +97,7 @@ function App() {
     rank: 'Blood Deity'
   });
 
-  const handlePlayerLocationChange = (location: Coordinate) => {
-    setGameState(prev => ({
-      ...prev,
-      playerLocation: location
-    }));
-  };
+
 
   const goToLocations = () => navigate('/locations');
   const goToRankings = () => navigate('/rankings');
@@ -147,7 +142,6 @@ function App() {
           element={
             <D3CityMap
               playerLocation={gameState.playerLocation}
-              onPlayerLocationChange={handlePlayerLocationChange}
             />
           }
         />
