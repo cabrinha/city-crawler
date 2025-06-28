@@ -145,10 +145,10 @@ function App() {
         <Route
           path="/"
           element={
-            <D3CityMap
-              playerLocation={gameState.playerLocation}
-              onPlayerLocationChange={handlePlayerLocationChange}
-            />
+        <D3CityMap
+          playerLocation={gameState.playerLocation}
+          onPlayerLocationChange={handlePlayerLocationChange}
+        />
           }
         />
         <Route

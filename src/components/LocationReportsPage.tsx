@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { LocationReporter } from './LocationReporter';
 import { LocationListings } from './LocationListings';
+import { useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
+import type { ReportedLocation } from '../types/game';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -107,6 +110,22 @@ const BackToMapButton = styled.button`
   }
 `;
 
+const LocationReportContainer = styled.div`
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #222;
+    border-color: #cc3333;
+    transform: translateY(-1px);
+  }
+`;
+
 interface LocationReportsPageProps {
   onBackToMap?: () => void;
 }
@@ -115,6 +134,10 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
   const [activeTab, setActiveTab] = useState<'report' | 'listings'>('report');
   const [refreshKey, setRefreshKey] = useState(0);
   const [countdown, setCountdown] = useState({ shops: '', guilds: '' });
+  const [reportedLocations, setReportedLocations] = useState<ReportedLocation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const calculateCountdown = () => {
     const now = new Date();
@@ -199,6 +222,20 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
   const handleLocationUpdated = () => {
     // Refresh when locations are updated
     setRefreshKey(prev => prev + 1);
+  };
+
+  const handleLocationClick = (location: ReportedLocation) => {
+    // Navigate to map page
+    navigate('/');
+
+    // Set player location after a short delay to ensure map is mounted
+    setTimeout(() => {
+      // Dispatch a custom event that the map will listen for
+      const event = new CustomEvent('setPlayerLocation', {
+        detail: location.coordinate
+      });
+      window.dispatchEvent(event);
+    }, 100);
   };
 
   return (

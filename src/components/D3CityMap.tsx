@@ -736,6 +736,22 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     );
   };
 
+  // Add event listener for setting player location
+  useEffect(() => {
+    const handleSetPlayerLocation = (event: CustomEvent<Coordinate>) => {
+      if (onPlayerLocationChange) {
+        onPlayerLocationChange(event.detail);
+        // Center on the new location
+        handleCenterPlayer();
+      }
+    };
+
+    window.addEventListener('setPlayerLocation', handleSetPlayerLocation as EventListener);
+    return () => {
+      window.removeEventListener('setPlayerLocation', handleSetPlayerLocation as EventListener);
+    };
+  }, [onPlayerLocationChange]);
+
   return (
     <MapContainer>
       <svg ref={svgRef} style={{ display: 'block' }} />
