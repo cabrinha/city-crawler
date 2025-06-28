@@ -98,3 +98,32 @@ export interface RichVampire {
   reporter_username?: string;
   rank: number;
 }
+
+export interface RouteStep {
+  coordinate: Coordinate;
+  action: 'walk' | 'transit';
+  transitStation?: string;
+  distanceFromStart: number;
+}
+
+export interface Route {
+  steps: RouteStep[];
+  totalMoves: number;
+  usesTransit: boolean;
+  transitStations: string[];
+  description: string;
+}
+
+export interface PathfindingResult {
+  walkingRoute: Route;
+  transitRoute?: Route;
+  recommendedRoute: Route;
+}
+
+export interface NavigationState {
+  startLocation?: Coordinate;
+  destination?: Coordinate;
+  currentRoute?: Route;
+  isNavigating: boolean;
+  showRouteOnMap: boolean;
+}

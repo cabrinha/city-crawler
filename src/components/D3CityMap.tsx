@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import styled from 'styled-components';
-import type { Coordinate, Building } from '../types/game';
+import type { Coordinate, Building, NavigationState, Route, RouteStep } from '../types/game';
 import { CITY_SIZE, getBuildingAt, getLocationName, getDistanceScore, BUILDINGS, STREET_NAMES, getStreetName, getStreetNumber } from '../data/cityData';
 import { ApiService } from '../services/api';
 import type { ReportedLocation } from '../types/game';
+import { NavigationPanel } from './NavigationPanel';
 
 const MapContainer = styled.div`
   width: 100%;
@@ -22,6 +23,13 @@ const Controls = styled.div`
   display: flex;
   flex-direction: column;
   gap: 10px;
+`;
+
+const NavigationContainer = styled.div`
+  position: absolute;
+  top: 80px;
+  left: 350px;
+  z-index: 100;
 `;
 
 const PlayerLocationWidget = styled.div`
@@ -256,6 +264,10 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   const [playerStreetName, setPlayerStreetName] = useState('');
   const [playerStreetNumber, setPlayerStreetNumber] = useState('');
   const [reportedLocations, setReportedLocations] = useState<ReportedLocation[]>([]);
+  const [navigationState, setNavigationState] = useState<NavigationState>({
+    isNavigating: false,
+    showRouteOnMap: false
+  });
 
   // Load reported locations on component mount
   useEffect(() => {
@@ -533,6 +545,98 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .attr('font-weight', 'bold')
       .text('★');
 
+    // Add route visualization if navigation is active
+    if (navigationState.showRouteOnMap && navigationState.currentRoute) {
+      const route = navigationState.currentRoute;
+
+      // Draw route line connecting all steps
+      if (route.steps.length > 1) {
+        const lineGenerator = d3.line<RouteStep>()
+          .x((d) => (d.coordinate.x - 1) * tileSize + tileSize / 2)
+          .y((d) => (d.coordinate.y - 1) * tileSize + tileSize / 2)
+          .curve(d3.curveLinear);
+
+        // Main route line
+        g.append('path')
+          .datum(route.steps)
+          .attr('class', 'route-line')
+          .attr('d', lineGenerator)
+          .attr('stroke', route.usesTransit ? '#00ccff' : '#00ff00')
+          .attr('stroke-width', 3)
+          .attr('fill', 'none')
+          .attr('stroke-dasharray', route.usesTransit ? '5,5' : 'none')
+          .style('opacity', 0.8);
+
+        // Add route markers for each step
+        route.steps.forEach((step, index) => {
+          if (index === 0) {
+            // Start marker
+            g.append('circle')
+              .attr('class', 'route-marker start')
+              .attr('cx', (step.coordinate.x - 1) * tileSize + tileSize / 2)
+              .attr('cy', (step.coordinate.y - 1) * tileSize + tileSize / 2)
+              .attr('r', tileSize * 0.3)
+              .attr('fill', '#00ff00')
+              .attr('stroke', 'white')
+              .attr('stroke-width', 2);
+
+            g.append('text')
+              .attr('class', 'route-marker-text')
+              .attr('x', (step.coordinate.x - 1) * tileSize + tileSize / 2)
+              .attr('y', (step.coordinate.y - 1) * tileSize + tileSize / 2)
+              .attr('text-anchor', 'middle')
+              .attr('dominant-baseline', 'middle')
+              .attr('fill', 'black')
+              .attr('font-size', '8px')
+              .attr('font-weight', 'bold')
+              .text('S');
+          } else if (index === route.steps.length - 1) {
+            // End marker
+            g.append('circle')
+              .attr('class', 'route-marker end')
+              .attr('cx', (step.coordinate.x - 1) * tileSize + tileSize / 2)
+              .attr('cy', (step.coordinate.y - 1) * tileSize + tileSize / 2)
+              .attr('r', tileSize * 0.3)
+              .attr('fill', '#ff0000')
+              .attr('stroke', 'white')
+              .attr('stroke-width', 2);
+
+            g.append('text')
+              .attr('class', 'route-marker-text')
+              .attr('x', (step.coordinate.x - 1) * tileSize + tileSize / 2)
+              .attr('y', (step.coordinate.y - 1) * tileSize + tileSize / 2)
+              .attr('text-anchor', 'middle')
+              .attr('dominant-baseline', 'middle')
+              .attr('fill', 'white')
+              .attr('font-size', '8px')
+              .attr('font-weight', 'bold')
+              .text('E');
+          } else if (step.action === 'transit') {
+            // Transit station marker
+            g.append('circle')
+              .attr('class', 'route-marker transit')
+              .attr('cx', (step.coordinate.x - 1) * tileSize + tileSize / 2)
+              .attr('cy', (step.coordinate.y - 1) * tileSize + tileSize / 2)
+              .attr('r', tileSize * 0.25)
+              .attr('fill', '#00ccff')
+              .attr('stroke', 'white')
+              .attr('stroke-width', 1);
+
+            g.append('text')
+              .attr('class', 'route-marker-text')
+              .attr('x', (step.coordinate.x - 1) * tileSize + tileSize / 2)
+              .attr('y', (step.coordinate.y - 1) * tileSize + tileSize / 2)
+              .attr('text-anchor', 'middle')
+              .attr('dominant-baseline', 'middle')
+              .attr('fill', 'black')
+              .attr('font-size', '6px')
+              .attr('font-weight', 'bold')
+              .text('T');
+          }
+        });
+      }
+    }
+
     // Add green street sign rectangles for intersections
     const streetSigns = g.selectAll('.street-sign')
       .data(gridData.filter(d => d.tileType === 'intersect' && d.streetName))
@@ -700,7 +804,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     return () => {
       d3.selectAll('.tooltip').remove();
     };
-  }, [playerLocation, createGridData, isCoordinatesLocked]);
+  }, [playerLocation, createGridData, isCoordinatesLocked, navigationState]);
 
   const handleZoomIn = () => {
     if (!svgRef.current || !zoomBehaviorRef.current) return;
@@ -736,6 +840,18 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     );
   };
 
+  const handleNavigationChange = (newState: NavigationState) => {
+    setNavigationState(newState);
+  };
+
+  const handleRouteSelect = (route: Route) => {
+    setNavigationState(prev => ({
+      ...prev,
+      currentRoute: route,
+      showRouteOnMap: true
+    }));
+  };
+
   return (
     <MapContainer>
       <svg ref={svgRef} style={{ display: 'block' }} />
@@ -745,6 +861,15 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         <Button onClick={handleZoomOut}>Zoom Out (-)</Button>
         <Button onClick={handleCenterPlayer}>Center on Player</Button>
       </Controls>
+
+      <NavigationContainer>
+        <NavigationPanel
+          playerLocation={playerLocation}
+          navigationState={navigationState}
+          onNavigationChange={handleNavigationChange}
+          onRouteSelect={handleRouteSelect}
+        />
+      </NavigationContainer>
 
       <PlayerLocationWidget>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Player Location</h3>
