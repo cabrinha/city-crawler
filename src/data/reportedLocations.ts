@@ -230,6 +230,14 @@ export function parseNaturalLanguageLocation(description: string): LocationRepor
   console.log(`📝 Normalized: "${normalizedDescription}"`);
 
   const patterns = [
+    // "The closest shop to here is The Potion Shoppe, right by Aardvark and 23rd."
+    /The closest shop to here is\s+(.+?),\s*right by\s+(.+?)\s+and\s+(Northern City Limits|Western City Limits)/i,
+    /The closest shop to here is\s+(.+?),\s*right by\s+(Northern City Limits|Western City Limits)\s+and\s+(\d+)(?:st|nd|rd|th)?/i,
+    /The closest shop to here is\s+(.+?),\s*right by\s+(.+?)\s+and\s+(\d+)(?:st|nd|rd|th)?/i,
+    // "Pssst. Allurists Guild 1 is right next to Pilchard and 77th today."
+    /(?:Pssst\.\s*)?(.+?)\s+is right next to\s+(.+?)\s+and\s+(Northern City Limits|Western City Limits)/i,
+    /(?:Pssst\.\s*)?(.+?)\s+is right next to\s+(Northern City Limits|Western City Limits)\s+and\s+(\d+)(?:st|nd|rd|th)?/i,
+    /(?:Pssst\.\s*)?(.+?)\s+is right next to\s+(.+?)\s+and\s+(\d+)(?:st|nd|rd|th)?/i,
     // "BuildingName, right by StreetName and StreetNumber" - handles regular numbered streets
     /^(.+?),\s*right by\s+(.+?)\s+and\s+(\d+)(?:st|nd|rd|th)?\.?$/i,
     // "BuildingName, right by StreetName and City Limits" - handles city limits
