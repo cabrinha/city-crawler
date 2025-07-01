@@ -140,8 +140,11 @@ export function addReportedLocation(report: LocationReport): ReportedLocation {
     guildLevel: report.guildLevel // Include guild level if provided
   };
 
-  // Remove any existing reports for the same building
-  reportedLocations = reportedLocations.filter(loc => loc.buildingName !== report.buildingName);
+  // Do not override existing hunter locations.
+  if (report.buildingType !== 'hunter') {
+    // Remove any existing reports for the same building
+    reportedLocations = reportedLocations.filter(loc => loc.buildingName !== report.buildingName);
+  }
 
   // Add the new report
   reportedLocations.push(newLocation);
