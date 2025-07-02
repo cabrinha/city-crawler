@@ -115,3 +115,38 @@ GRANT EXECUTE ON FUNCTION set_expiration_time() TO crawler;
 
 -- 9. Verify migration completed successfully
 SELECT 'Migration completed successfully!' as status;
+
+-- Migration to increase street_number column size
+-- This allows for "Western City Limits" and "Northern City Limits" to be stored
+
+-- Step 1: Drop the view that depends on street_number
+DROP VIEW IF EXISTS active_location_reports;
+
+-- Step 2: Alter the column type
+ALTER TABLE location_reports
+ALTER COLUMN street_number TYPE VARCHAR(25);
+
+-- Step 3: Recreate the view
+CREATE OR REPLACE VIEW active_location_reports AS
+SELECT
+    id,
+    building_name,
+    building_type,
+    custom_item_name,
+    coordinate_x,
+    coordinate_y,
+    street_name,
+    street_number,
+    guild_level,
+    reporter_username,
+    confidence,
+    notes,
+    reported_at,
+    expires_at
+FROM location_reports
+WHERE is_active = TRUE
+AND (expires_at IS NULL OR expires_at > NOW())
+ORDER BY reported_at DESC;
+
+-- Update the constraint to reflect the new size if needed
+COMMENT ON COLUMN location_reports.street_number IS 'Street number or city limits (e.g., "23rd", "Western City Limits")';
