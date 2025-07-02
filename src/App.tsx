@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { D3CityMap } from './components/D3CityMap';
 import { LocationReportsPage } from './components/LocationReportsPage';
 import { RankingsPage } from './components/RankingsPage';
+import { AboutPage } from './components/AboutPage';
 import { updateMetaTags } from './main';
 import type { GameState } from './types/game';
 
@@ -12,7 +13,7 @@ const AppContainer = styled.div`
   height: 100vh;
   background-color: #000;
   color: #fff;
-  font-family: 'Courier New', monospace;
+  font-family: Verdana, Arial, sans-serif;
 `;
 
 const Header = styled.header`
@@ -97,10 +98,9 @@ function App() {
     rank: 'Blood Deity'
   });
 
-
-
   const goToLocations = () => navigate('/locations');
   const goToRankings = () => navigate('/rankings');
+  const goToAbout = () => navigate('/about');
   const goToMap = () => navigate('/');
 
   const isMapPage = location.pathname === '/';
@@ -120,6 +120,9 @@ function App() {
             </NavigationButton>
             <NavigationButton onClick={goToRankings}>
               Rankings
+            </NavigationButton>
+            <NavigationButton onClick={goToAbout}>
+              About
             </NavigationButton>
             <GitHubLink
               href="https://github.com/cabrinha/city-crawler"
@@ -152,6 +155,10 @@ function App() {
         <Route
           path="/rankings"
           element={<RankingsPage onBackToMap={goToMap} />}
+        />
+        <Route
+          path="/about"
+          element={<AboutPage onBackToMap={goToMap} />}
         />
       </Routes>
     </AppContainer>
