@@ -4,21 +4,27 @@ import { BUILDINGS } from '../data/cityData';
 // Transit stations from cityData.ts
 const TRANSIT_STATIONS = BUILDINGS.filter(building => building.type === 'transit');
 
-// Transit cost: 1 move to enter station + 1 move per transit + 1 move to exit = 3 moves minimum
-const TRANSIT_BASE_COST = 3;
+/**
+ * Calculate Chebyshev distance between two points (allows diagonal movement)
+ * This is the correct distance calculation since players can move diagonally
+ */
+export function calculateDistance(start: Coordinate, end: Coordinate): number {
+  return Math.max(Math.abs(end.x - start.x), Math.abs(end.y - start.y));
+}
 
 /**
- * Calculate Manhattan distance between two points
+ * Calculate Manhattan distance between two points (for reference/debugging)
+ * @deprecated Use calculateDistance instead for actual movement
  */
 export function calculateManhattanDistance(start: Coordinate, end: Coordinate): number {
   return Math.abs(end.x - start.x) + Math.abs(end.y - start.y);
 }
 
 /**
- * Find the walking route between two points (straight-line Manhattan distance)
+ * Find the walking route between two points (diagonal movement allowed)
  */
 export function findWalkingRoute(start: Coordinate, destination: Coordinate): Route {
-  const totalMoves = calculateManhattanDistance(start, destination);
+  const totalMoves = calculateDistance(start, destination);
 
   // Create steps for the route (simplified - just show start and end)
   const steps: RouteStep[] = [
@@ -48,10 +54,10 @@ export function findWalkingRoute(start: Coordinate, destination: Coordinate): Ro
  */
 function findNearestTransitStation(coordinate: Coordinate): { station: typeof TRANSIT_STATIONS[0], distance: number } {
   let nearestStation = TRANSIT_STATIONS[0];
-  let minDistance = calculateManhattanDistance(coordinate, nearestStation.coordinate);
+  let minDistance = calculateDistance(coordinate, nearestStation.coordinate);
 
   for (const station of TRANSIT_STATIONS) {
-    const distance = calculateManhattanDistance(coordinate, station.coordinate);
+    const distance = calculateDistance(coordinate, station.coordinate);
     if (distance < minDistance) {
       minDistance = distance;
       nearestStation = station;
@@ -73,11 +79,11 @@ export function findTransitRoute(start: Coordinate, destination: Coordinate): Ro
     return undefined;
   }
 
-  // Calculate transit distance (always 1 move between any two stations)
+  // Transit between any two stations costs exactly 1 move
   const transitMoves = 1;
 
-  // Total moves: walk to start station + transit + walk from end station
-  const totalMoves = startStation.distance + TRANSIT_BASE_COST + transitMoves + endStation.distance;
+  // Total moves: walk to start station + 1 move for transit + walk from end station
+  const totalMoves = startStation.distance + transitMoves + endStation.distance;
 
   const steps: RouteStep[] = [
     {
@@ -94,7 +100,7 @@ export function findTransitRoute(start: Coordinate, destination: Coordinate): Ro
       coordinate: endStation.station.coordinate,
       action: 'transit',
       transitStation: endStation.station.name,
-      distanceFromStart: startStation.distance + TRANSIT_BASE_COST + transitMoves
+      distanceFromStart: startStation.distance + transitMoves
     },
     {
       coordinate: destination,
@@ -121,8 +127,8 @@ export function findOptimalRoute(start: Coordinate, destination: Coordinate): Pa
 
   let recommendedRoute = walkingRoute;
 
-  // Use transit route if it's significantly better (at least 3 moves saved)
-  if (transitRoute && transitRoute.totalMoves < walkingRoute.totalMoves - 2) {
+  // Use transit route if it's better (even by 1 move)
+  if (transitRoute && transitRoute.totalMoves < walkingRoute.totalMoves) {
     recommendedRoute = transitRoute;
   }
 
