@@ -26,22 +26,44 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker meta
+      - name: Docker meta backend
+        id: meta-backend
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/cabrinha/city-crawler
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=ref,event=branch,prefix=backend
+            type=ref,event=pr,prefix=backend
+            type=semver,pattern={{version}},prefix=backend
+            type=semver,pattern={{major}}.{{minor}},prefix=backend
 
-      - name: Build and push
+      - name: Docker meta frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/cabrinha/city-crawler
+          tags: |
+            type=ref,event=branch,prefix=frontend
+            type=ref,event=pr,prefix=frontend
+            type=semver,pattern={{version}},prefix=frontend
+            type=semver,pattern={{major}}.{{minor}},prefix=frontend
+
+      - name: Build and push backend
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: Dockerfile
+          file: Dockerfile.backend
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.frontend
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
