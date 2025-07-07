@@ -8,17 +8,15 @@ import {
 import { STREET_NAMES, BUILDINGS, getStreetName, getStreetNumber } from '../data/cityData';
 import { ApiService } from '../services/api';
 
-const NavigationContainer = styled.div<{ $isDragging?: boolean }>`
+const NavigationContainer = styled.div`
   background-color: rgba(0, 0, 0, 0.9);
   color: white;
   border-radius: 8px;
   border: 1px solid #666;
   min-width: 280px;
   max-width: 320px;
-  position: absolute;
-  cursor: ${props => props.$isDragging ? 'grabbing' : 'default'};
+  position: relative;
   user-select: none;
-  z-index: 1000;
 `;
 
 const NavigationHeader = styled.div<{ $isVisible: boolean }>`
@@ -27,11 +25,7 @@ const NavigationHeader = styled.div<{ $isVisible: boolean }>`
   align-items: center;
   padding: 15px;
   border-bottom: ${props => props.$isVisible ? '1px solid #666' : 'none'};
-  cursor: grab;
-
-  &:active {
-    cursor: grabbing;
-  }
+  cursor: pointer;
 
   &:hover {
     background-color: rgba(255, 255, 255, 0.1);
@@ -224,32 +218,7 @@ const LocationTypeSelect = styled.select`
   }
 `;
 
-const DragHandle = styled.div`
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 20px;
-  height: 20px;
-  cursor: grab;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: #666;
 
-  &:hover {
-    color: #999;
-  }
-
-  &:active {
-    cursor: grabbing;
-  }
-
-  &::before {
-    content: '⋮⋮';
-    letter-spacing: -2px;
-  }
-`;
 
 interface NavigationPanelProps {
   playerLocation?: Coordinate;
@@ -278,10 +247,6 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
   const [pathfindingResult, setPathfindingResult] = useState<PathfindingResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reportedLocations, setReportedLocations] = useState<ReportedLocation[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Location selection states
@@ -447,53 +412,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
     });
   };
 
-  // Drag functionality
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (containerRef.current) {
-      e.preventDefault(); // Prevent text selection during drag
-      setDragStartPosition({ x: e.clientX, y: e.clientY });
-      setDragOffset({
-        x: e.clientX - position.x,
-        y: e.clientY - position.y
-      });
-    }
-  };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (dragStartPosition.x !== 0 || dragStartPosition.y !== 0) {
-      const deltaX = e.clientX - dragStartPosition.x;
-      const deltaY = e.clientY - dragStartPosition.y;
-      const dragDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-      // Only start dragging if mouse moved more than 3 pixels
-      if (dragDistance > 3 && !isDragging) {
-        setIsDragging(true);
-      }
-
-      if (isDragging) {
-        setPosition({
-          x: e.clientX - dragOffset.x,
-          y: e.clientY - dragOffset.y
-        });
-      }
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    setDragStartPosition({ x: 0, y: 0 });
-  };
-
-  useEffect(() => {
-    if (isDragging || dragStartPosition.x !== 0 || dragStartPosition.y !== 0) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, dragOffset, dragStartPosition]);
 
   // Helper function to render destination input
   const renderDestinationInput = () => {
@@ -606,23 +525,10 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
   };
 
   return (
-    <NavigationContainer
-      ref={containerRef}
-      $isDragging={isDragging}
-      style={{
-        left: position.x,
-        top: position.y,
-      }}
-    >
-      <DragHandle onMouseDown={handleMouseDown} />
+    <NavigationContainer ref={containerRef}>
       <NavigationHeader
         $isVisible={isVisible}
-        onMouseDown={handleMouseDown}
-        onClick={() => {
-          if (!isDragging) {
-            setIsVisible(!isVisible);
-          }
-        }}
+        onClick={() => setIsVisible(!isVisible)}
       >
         <h3>🧭 Navigation</h3>
       </NavigationHeader>

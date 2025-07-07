@@ -25,15 +25,6 @@ const Controls = styled.div`
   gap: 10px;
 `;
 
-const NavigationContainer = styled.div`
-  position: absolute;
-  top: 80px;
-  left: 350px;
-  z-index: 100;
-`;
-
-
-
 const NearestBuildingsWidget = styled.div`
   position: absolute;
   top: 80px;
@@ -79,8 +70,6 @@ const WidgetContent = styled.div<{ $isVisible: boolean }>`
   transition: max-height 0.3s ease, padding 0.3s ease;
 `;
 
-
-
 const BuildingList = styled.div`
   margin-bottom: 15px;
 `;
@@ -121,19 +110,6 @@ const Button = styled.button`
     border-color: #999;
   }
 `;
-
-// const InfoPanel = styled.div`
-//   position: absolute;
-//   top: 80px;
-//   right: 20px;
-//   z-index: 100;
-//   background-color: rgba(0, 0, 0, 0.9);
-//   color: white;
-//   padding: 15px;
-//   border-radius: 8px;
-//   border: 1px solid #666;
-//   min-width: 200px;
-// `;
 
 const PerformanceStats = styled.div`
   position: absolute;
@@ -265,14 +241,10 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     loadReportedLocations();
   }, []);
 
-
-
   // Calculate nearest buildings (only if player location is set)
   const nearestBanks = playerLocation ? findNearestBuildings(playerLocation, 'bank') : [];
   const nearestPubs = playerLocation ? findNearestBuildings(playerLocation, 'pub') : [];
   const nearestTransit = playerLocation ? findNearestBuildings(playerLocation, 'transit') : [];
-
-
 
   // Define colors to match the actual game CSS from blood.css
   const colors = {
@@ -793,24 +765,6 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     };
   }, [playerLocation, createGridData, isCoordinatesLocked, navigationState]);
 
-  const handleZoomIn = () => {
-    if (!svgRef.current || !zoomBehaviorRef.current) return;
-    const svg = d3.select(svgRef.current);
-    svg.transition().duration(300).call(
-      zoomBehaviorRef.current.scaleBy,
-      1.5
-    );
-  };
-
-  const handleZoomOut = () => {
-    if (!svgRef.current || !zoomBehaviorRef.current) return;
-    const svg = d3.select(svgRef.current);
-    svg.transition().duration(300).call(
-      zoomBehaviorRef.current.scaleBy,
-      1 / 1.5
-    );
-  };
-
 
 
   const handleNavigationChange = (newState: NavigationState) => {
@@ -838,20 +792,13 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       <svg ref={svgRef} style={{ display: 'block' }} />
 
       <Controls>
-        <Button onClick={handleZoomIn}>Zoom In (+)</Button>
-        <Button onClick={handleZoomOut}>Zoom Out (-)</Button>
-      </Controls>
-
-      <NavigationContainer>
         <NavigationPanel
           playerLocation={playerLocation}
           navigationState={navigationState}
           onNavigationChange={handleNavigationChange}
           onRouteSelect={handleRouteSelect}
         />
-      </NavigationContainer>
-
-
+      </Controls>
 
       <NearestBuildingsWidget>
         <WidgetHeader
