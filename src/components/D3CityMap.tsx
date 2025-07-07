@@ -97,19 +97,7 @@ const Distance = styled.span`
   font-weight: bold;
 `;
 
-const Button = styled.button`
-  padding: 10px;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  border: 1px solid #666;
-  border-radius: 4px;
-  cursor: pointer;
 
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.9);
-    border-color: #999;
-  }
-`;
 
 const PerformanceStats = styled.div`
   position: absolute;
