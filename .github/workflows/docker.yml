@@ -32,10 +32,10 @@ jobs:
         with:
           images: ghcr.io/cabrinha/city-crawler
           tags: |
-            type=ref,event=branch,prefix=backend
-            type=ref,event=pr,prefix=backend
-            type=semver,pattern={{version}},prefix=backend
-            type=semver,pattern={{major}}.{{minor}},prefix=backend
+            type=ref,event=branch,prefix=backend-
+            type=ref,event=pr,prefix=backend-
+            type=semver,pattern={{version}},prefix=backend-
+            type=semver,pattern={{major}}.{{minor}},prefix=backend-
 
       - name: Docker meta frontend
         id: meta-frontend
@@ -43,10 +43,10 @@ jobs:
         with:
           images: ghcr.io/cabrinha/city-crawler
           tags: |
-            type=ref,event=branch,prefix=frontend
-            type=ref,event=pr,prefix=frontend
-            type=semver,pattern={{version}},prefix=frontend
-            type=semver,pattern={{major}}.{{minor}},prefix=frontend
+            type=ref,event=branch,prefix=frontend-
+            type=ref,event=pr,prefix=frontend-
+            type=semver,pattern={{version}},prefix=frontend-
+            type=semver,pattern={{major}}.{{minor}},prefix=frontend-
 
       - name: Build and push backend
         uses: docker/build-push-action@v5
