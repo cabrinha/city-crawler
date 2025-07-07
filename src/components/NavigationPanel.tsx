@@ -90,8 +90,6 @@ const Label = styled.label`
   margin-bottom: 5px;
 `;
 
-
-
 const ButtonGroup = styled.div`
   display: flex;
   gap: 10px;
@@ -164,8 +162,6 @@ const HelpText = styled.div`
   margin-top: 5px;
   line-height: 1.3;
 `;
-
-
 
 const LocationInputGroup = styled.div`
   display: flex;
@@ -285,6 +281,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Location selection states
@@ -396,7 +393,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
     }
   };
 
-            const handleCalculateRoute = () => {
+  const handleCalculateRoute = () => {
     setError(null);
 
     const startCoord = getCoordinateFromSelection(startSelection);
@@ -453,30 +450,42 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
   // Drag functionality
   const handleMouseDown = (e: React.MouseEvent) => {
     if (containerRef.current) {
-      setIsDragging(true);
-      const rect = containerRef.current.getBoundingClientRect();
+      e.preventDefault(); // Prevent text selection during drag
+      setDragStartPosition({ x: e.clientX, y: e.clientY });
       setDragOffset({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
+        x: e.clientX - position.x,
+        y: e.clientY - position.y
       });
     }
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging) {
-      setPosition({
-        x: e.clientX - dragOffset.x,
-        y: e.clientY - dragOffset.y
-      });
+    if (dragStartPosition.x !== 0 || dragStartPosition.y !== 0) {
+      const deltaX = e.clientX - dragStartPosition.x;
+      const deltaY = e.clientY - dragStartPosition.y;
+      const dragDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+      // Only start dragging if mouse moved more than 3 pixels
+      if (dragDistance > 3 && !isDragging) {
+        setIsDragging(true);
+      }
+
+      if (isDragging) {
+        setPosition({
+          x: e.clientX - dragOffset.x,
+          y: e.clientY - dragOffset.y
+        });
+      }
     }
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setDragStartPosition({ x: 0, y: 0 });
   };
 
   useEffect(() => {
-    if (isDragging) {
+    if (isDragging || dragStartPosition.x !== 0 || dragStartPosition.y !== 0) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -484,7 +493,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, dragOffset]);
+  }, [isDragging, dragOffset, dragStartPosition]);
 
   // Helper function to render destination input
   const renderDestinationInput = () => {
@@ -500,7 +509,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
           <option value="reported">Reported Location</option>
         </LocationTypeSelect>
 
-                {destinationSelection.type === 'street' && (
+        {destinationSelection.type === 'street' && (
           <>
             <LocationInputGroup>
               <SmallSelect
@@ -609,11 +618,11 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
       <NavigationHeader
         $isVisible={isVisible}
         onMouseDown={handleMouseDown}
-                 onClick={() => {
-           if (!isDragging) {
-             setIsVisible(!isVisible);
-           }
-         }}
+        onClick={() => {
+          if (!isDragging) {
+            setIsVisible(!isVisible);
+          }
+        }}
       >
         <h3>🧭 Navigation</h3>
       </NavigationHeader>
