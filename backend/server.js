@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import pkg from 'pg';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { startDiscordBot } from './discordBot.js';
 const { Pool } = pkg;
 
 // ES module equivalent of __dirname
@@ -724,6 +725,14 @@ app.listen(port, () => {
   console.log(`🚀 City Crawler API server running on port ${port}`);
   console.log(`📊 Health check: http://localhost:${port}/health`);
   console.log(`🗄️  Database: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'city_crawler'}`);
+
+  // Start Discord bot if environment variables are configured
+  if (process.env.DISCORD_BOT_TOKEN && process.env.DISCORD_CHANNEL_ID) {
+    console.log(`🤖 Starting Discord bot for channel: ${process.env.DISCORD_CHANNEL_ID}`);
+    startDiscordBot();
+  } else {
+    console.log(`⚠️  Discord bot disabled - missing DISCORD_BOT_TOKEN or DISCORD_CHANNEL_ID environment variables`);
+  }
 });
 
 // Graceful shutdown
