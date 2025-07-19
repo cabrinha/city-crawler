@@ -13,6 +13,7 @@ An interactive web-based map for the [Vampires!](https://quiz.ravenblack.net/blo
 - **Game-like Styling**: Dark theme matching the original game aesthetic
 - **Shop and guild location reporting system**
 - **Discord Bot Integration**: Automatic shop location reporting from Discord messages
+- **Slash Command Support**: `/parse-shops` command for retroactive message processing
 - **Multi-user Credit System**: Credits multiple contributors for collaborative reporting
 
 ## Game Information
@@ -68,6 +69,33 @@ The bot supports crediting multiple contributors for shop locations:
 
 For 4 shops with 4 credited users = 16 total reports created (4 × 4)
 
+### Slash Commands
+
+The bot includes slash commands for additional functionality:
+
+#### `/parse-shops`
+
+Process shop locations from a specific message by ID. Useful for:
+- Retroactively processing older messages
+- Re-processing messages that were missed
+- Processing messages that are older than 12 hours
+
+**Usage:**
+```
+/parse-shops message_id:1234567890123456789
+```
+
+**Parameters:**
+- `message_id`: The Discord message ID to parse (right-click message → Copy Message ID)
+
+**Features:**
+- Works on messages of any age (no 12-hour limit)
+- Preserves original message timestamp and author information
+- Supports the same credit system as automatic processing
+- Provides detailed feedback on processing results
+
+**Note:** You need "Developer Mode" enabled in Discord to copy message IDs.
+
 ### Required Environment Variables
 
 To enable the Discord bot, add these environment variables to your `.env` file:
@@ -94,6 +122,7 @@ DB_PASSWORD=your_db_password
    - View Channels
    - Read Message History
    - Read Messages/View Channels
+   - Use Slash Commands
 5. **Invite Bot**: Generate an invite link with the required permissions and add the bot to your Discord server
 6. **Get Channel ID**: Enable Developer Mode in Discord, right-click the target channel, and copy the ID
 
@@ -101,7 +130,8 @@ DB_PASSWORD=your_db_password
 
 - **Automatic Shop Reporting**: Parses Discord messages and reports shop locations automatically
 - **Multi-User Credit System**: Credits multiple contributors per message, creating separate reports for each
-- **12-Hour Time Limit**: Only processes messages less than 12 hours old
+- **Slash Command Support**: `/parse-shops` command to retroactively process specific messages
+- **12-Hour Time Limit**: Only processes messages less than 12 hours old (automatic monitoring only)
 - **Street Name Recognition**: Converts street names to coordinates using the game's street system
 - **Error Handling**: Comprehensive logging and error handling for Discord operations
 - **Database Integration**: Reports are stored using the same system as manual reports

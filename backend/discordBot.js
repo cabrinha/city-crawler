@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits } from 'discord.js';
+import { Client, GatewayIntentBits, SlashCommandBuilder, REST, Routes } from 'discord.js';
 import pkg from 'pg';
 import dotenv from 'dotenv';
 
@@ -303,12 +303,146 @@ async function reportShopLocation(shop, messageAuthor, messageTimestamp, credite
   }
 }
 
+// Register slash commands
+async function registerSlashCommands() {
+  const commands = [
+    new SlashCommandBuilder()
+      .setName('parse-shops')
+      .setDescription('Parse shop locations from a specific message')
+      .addStringOption(option =>
+        option.setName('message_id')
+          .setDescription('The ID of the message to parse for shop locations')
+          .setRequired(true)
+      )
+  ].map(command => command.toJSON());
+
+  const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_BOT_TOKEN);
+
+  try {
+    logInfo('Registering slash commands');
+
+    await rest.put(
+      Routes.applicationCommands(client.user.id),
+      { body: commands }
+    );
+
+    logInfo('Successfully registered slash commands');
+  } catch (error) {
+    logError('Failed to register slash commands', error);
+  }
+}
+
+// Process a specific message by ID
+async function processMessageById(messageId, channelId, interactionUser) {
+  try {
+    const channel = await client.channels.fetch(channelId);
+    if (!channel) {
+      throw new Error(`Could not access channel ${channelId}`);
+    }
+
+    const message = await channel.messages.fetch(messageId);
+    if (!message) {
+      throw new Error(`Could not find message ${messageId}`);
+    }
+
+    logInfo('Processing message by ID via slash command', {
+      message_id: messageId,
+      original_author: message.author.username,
+      requested_by: interactionUser.username,
+      message_timestamp: message.createdAt.toISOString(),
+      content_length: message.content.length
+    });
+
+    // Parse shop locations and credits from the fetched message
+    const shops = parseShopLocations(message.content);
+    const creditedUsers = parseCredits(message.content);
+
+    if (shops.length === 0) {
+      logInfo('No shop locations found in requested message', {
+        message_id: messageId,
+        original_author: message.author.username,
+        requested_by: interactionUser.username
+      });
+      return {
+        success: false,
+        message: 'No shop locations found in the specified message',
+        shops: 0,
+        reports: 0
+      };
+    }
+
+    logInfo('Found shop locations in requested message', {
+      message_id: messageId,
+      original_author: message.author.username,
+      requested_by: interactionUser.username,
+      shop_count: shops.length,
+      credited_users: creditedUsers,
+      credited_count: creditedUsers.length,
+      shops: shops.map(s => ({ name: s.name, location: `${s.streetName} & ${s.streetNumber}` }))
+    });
+
+    // Report each shop for each credited user
+    let totalReports = 0;
+    let failedShops = 0;
+
+    for (const shop of shops) {
+      const result = await reportShopLocation(
+        shop,
+        `${message.author.username} (via slash command by ${interactionUser.username})`,
+        message.createdAt,
+        creditedUsers
+      );
+      if (result.success) {
+        totalReports += result.reports;
+      } else {
+        failedShops++;
+      }
+    }
+
+    logInfo('Slash command shop reporting completed', {
+      message_id: messageId,
+      original_author: message.author.username,
+      requested_by: interactionUser.username,
+      total_shops: shops.length,
+      credited_users: creditedUsers,
+      total_reports_created: totalReports,
+      failed_shops: failedShops,
+      reports_per_shop: creditedUsers.length > 0 ? creditedUsers.length : 1
+    });
+
+    return {
+      success: true,
+      message: `Successfully processed ${shops.length} shops with ${totalReports} total reports created`,
+      shops: shops.length,
+      reports: totalReports,
+      credits: creditedUsers,
+      failedShops: failedShops
+    };
+
+  } catch (error) {
+    logError('Failed to process message by ID', error, {
+      message_id: messageId,
+      channel_id: channelId,
+      requested_by: interactionUser.username
+    });
+    return {
+      success: false,
+      message: `Error processing message: ${error.message}`,
+      shops: 0,
+      reports: 0
+    };
+  }
+}
+
 // Bot event handlers
-client.on('ready', () => {
+client.on('ready', async () => {
   logInfo('Discord bot is ready', {
     bot_user: client.user.tag,
     guild_count: client.guilds.cache.size
   });
+
+  // Register slash commands
+  await registerSlashCommands();
 });
 
 client.on('messageCreate', async (message) => {
@@ -377,6 +511,65 @@ client.on('messageCreate', async (message) => {
     failed_shops: failedShops,
     reports_per_shop: creditedUsers.length > 0 ? creditedUsers.length : 1
   });
+});
+
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  const { commandName } = interaction;
+
+  if (commandName === 'parse-shops') {
+    try {
+      // Defer the reply since processing might take a while
+      await interaction.deferReply({ ephemeral: true });
+
+      const messageId = interaction.options.getString('message_id');
+      const channelId = interaction.channelId;
+
+      logInfo('Slash command received', {
+        command: commandName,
+        message_id: messageId,
+        channel_id: channelId,
+        user: interaction.user.username
+      });
+
+      // Process the message
+      const result = await processMessageById(messageId, channelId, interaction.user);
+
+      // Prepare response message
+      let responseMessage = result.message;
+
+      if (result.success) {
+        responseMessage += `\n\n📊 **Details:**`;
+        responseMessage += `\n• Shops found: ${result.shops}`;
+        responseMessage += `\n• Total reports created: ${result.reports}`;
+
+        if (result.credits && result.credits.length > 0) {
+          responseMessage += `\n• Credited users: ${result.credits.join(', ')}`;
+        }
+
+        if (result.failedShops > 0) {
+          responseMessage += `\n⚠️ Failed to process ${result.failedShops} shops`;
+        }
+      }
+
+      await interaction.editReply(responseMessage);
+
+    } catch (error) {
+      logError('Error handling slash command', error, {
+        command: commandName,
+        user: interaction.user.username
+      });
+
+      const errorMessage = 'An error occurred while processing the command. Please check the message ID and try again.';
+
+      if (interaction.deferred) {
+        await interaction.editReply(errorMessage);
+      } else {
+        await interaction.reply({ content: errorMessage, ephemeral: true });
+      }
+    }
+  }
 });
 
 client.on('error', (error) => {
