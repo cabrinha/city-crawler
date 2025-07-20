@@ -210,17 +210,19 @@ function parseShopLocations(messageContent) {
 }
 
 // Report shop location to database for multiple credited users
-async function reportShopLocation(shop, messageAuthor, messageTimestamp, creditedUsers = []) {
+async function reportShopLocation(shop, messageAuthor, messageTimestamp, creditedUsers = [], bypassTimeLimit = false) {
   try {
-    // Check if message is more than 12 hours old
-    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
-    if (messageTimestamp < twelveHoursAgo) {
-      logWarning('Skipping old message - more than 12 hours old', {
-        message_timestamp: messageTimestamp.toISOString(),
-        shop_name: shop.name,
-        author: messageAuthor
-      });
-      return { success: false, reports: 0 };
+    // Check if message is more than 12 hours old (only for automatic monitoring)
+    if (!bypassTimeLimit) {
+      const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+      if (messageTimestamp < twelveHoursAgo) {
+        logWarning('Skipping old message - more than 12 hours old', {
+          message_timestamp: messageTimestamp.toISOString(),
+          shop_name: shop.name,
+          author: messageAuthor
+        });
+        return { success: false, reports: 0 };
+      }
     }
 
     // Use credited users if available, otherwise fall back to Discord Bot
@@ -280,7 +282,8 @@ async function reportShopLocation(shop, messageAuthor, messageTimestamp, credite
           credited_to: reporterUsername,
           discord_author: messageAuthor,
           message_timestamp: messageTimestamp.toISOString(),
-          group_credit: creditedUsers.length > 1
+          group_credit: creditedUsers.length > 1,
+          time_limit_bypassed: bypassTimeLimit
         });
       } catch (reportError) {
         logError('Failed to create individual report', reportError, {
@@ -385,12 +388,13 @@ async function processMessageById(messageId, channelId, interactionUser) {
     let totalReports = 0;
     let failedShops = 0;
 
-    for (const shop of shops) {
+        for (const shop of shops) {
       const result = await reportShopLocation(
         shop,
         `${message.author.username} (via slash command by ${interactionUser.username})`,
         message.createdAt,
-        creditedUsers
+        creditedUsers,
+        true // Bypass time limit for slash commands
       );
       if (result.success) {
         totalReports += result.reports;
@@ -495,7 +499,7 @@ client.on('messageCreate', async (message) => {
   let failedShops = 0;
 
   for (const shop of shops) {
-    const result = await reportShopLocation(shop, message.author.username, message.createdAt, creditedUsers);
+    const result = await reportShopLocation(shop, message.author.username, message.createdAt, creditedUsers, false); // Apply 12-hour limit for automatic monitoring
     if (result.success) {
       totalReports += result.reports;
     } else {
