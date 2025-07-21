@@ -171,7 +171,7 @@ function parseShopLocations(messageContent) {
           const numMatch = streetNumber.match(/(\d+)/);
           if (numMatch) {
             const num = parseInt(numMatch[1]);
-            streetY = (num * 2) + 2; // Convert street number to coordinate
+            streetY = (num - 1) * 2 + 2; // Convert street number to coordinate (matches frontend logic)
           }
         }
 
