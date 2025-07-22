@@ -447,34 +447,85 @@ client.on('ready', async () => {
 
   // Register slash commands
   await registerSlashCommands();
+
+  // Start message monitoring using awaitMessages
+  startMessageMonitoring().catch(error => {
+    logError('Failed to start message monitoring', error);
+  });
 });
 
-client.on('messageCreate', async (message) => {
-  // Only process messages from the specific channel
+// Continuous message monitoring using awaitMessages
+async function startMessageMonitoring() {
   const TARGET_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
   if (!TARGET_CHANNEL_ID) {
     logError('DISCORD_CHANNEL_ID environment variable not set');
     return;
   }
 
-  if (message.channel.id !== TARGET_CHANNEL_ID) {
-    return; // Not the target channel
-  }
+  let lastProcessedMessageTime = new Date();
 
-  // Skip messages from bots
-  if (message.author.bot) {
-    return;
-  }
+  logInfo('Starting continuous message monitoring', {
+    channel_id: TARGET_CHANNEL_ID,
+    monitoring_method: 'awaitMessages'
+  });
 
+  while (true) {
+    try {
+      const channel = await client.channels.fetch(TARGET_CHANNEL_ID);
+      if (!channel || !channel.isTextBased()) {
+        logError('Target channel not found or not text-based', { channel_id: TARGET_CHANNEL_ID });
+        await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds before retry
+        continue;
+      }
+
+      // Collect messages for 30 seconds, filtering for non-bot messages posted after our last check
+      const collected = await channel.awaitMessages({
+        filter: (message) => {
+          return !message.author.bot && message.createdAt > lastProcessedMessageTime;
+        },
+        time: 30000, // Collect for 30 seconds
+        errors: [] // Don't throw errors on timeout
+      });
+
+      if (collected.size > 0) {
+        logInfo('Collected messages for processing', {
+          message_count: collected.size,
+          collection_window: '30s'
+        });
+
+        // Process each collected message
+        for (const [messageId, message] of collected) {
+          await processDiscordMessage(message);
+
+          // Update our last processed time
+          if (message.createdAt > lastProcessedMessageTime) {
+            lastProcessedMessageTime = message.createdAt;
+          }
+        }
+      }
+
+      // Small delay before next collection cycle
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+    } catch (error) {
+      logError('Error in message monitoring loop', error);
+      await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds before retry
+    }
+  }
+}
+
+// Extract message processing logic into separate function
+async function processDiscordMessage(message) {
   logInfo('Processing Discord message', {
     author: message.author.username,
     channel: message.channel.name,
     message_id: message.id,
     timestamp: message.createdAt.toISOString(),
-    content_length: message.content.length
+    content_length: message.content.length,
+    message_preview: message.content.substring(0, 100) + (message.content.length > 100 ? '...' : '')
   });
 
-    // Parse shop locations and credits from message
+  // Parse shop locations and credits from message
   const shops = parseShopLocations(message.content);
   const creditedUsers = parseCredits(message.content);
 
@@ -515,7 +566,7 @@ client.on('messageCreate', async (message) => {
     failed_shops: failedShops,
     reports_per_shop: creditedUsers.length > 0 ? creditedUsers.length : 1
   });
-});
+}
 
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
