@@ -241,11 +241,12 @@ async function reportShopLocation(shop, messageAuthor, messageTimestamp, credite
       }
     }
 
-    // Use credited users if available, otherwise fall back to Discord Bot
-    const reportersToCredit = creditedUsers.length > 0 ? creditedUsers : ['Discord Bot'];
+    // Determine the primary reporter and prepare credits
+    const primaryReporter = creditedUsers.length > 0 ? creditedUsers[0] : 'Discord Bot';
+    const allCreditedUsers = creditedUsers.length > 0 ? creditedUsers : ['Discord Bot'];
 
     // Ensure all credited users exist in the users table
-    for (const username of reportersToCredit) {
+    for (const username of allCreditedUsers) {
       await pool.query(`
         INSERT INTO users (username, total_reports)
         VALUES ($1, 0)
@@ -260,7 +261,11 @@ async function reportShopLocation(shop, messageAuthor, messageTimestamp, credite
       WHERE building_name = $1 AND building_type = $2 AND is_active = TRUE
     `, [shop.name, 'shop']);
 
-    let successfulReports = 0;
+    // Create ONE report per shop with all credits in notes
+    const notes = creditedUsers.length > 0
+      ? `Auto-reported from Discord by ${messageAuthor}. Credits: ${creditedUsers.join(', ')}`
+      : `Auto-reported from Discord by ${messageAuthor}`;
+
     const insertQuery = `
       INSERT INTO location_reports (
         building_name, building_type, coordinate_x, coordinate_y,
@@ -269,48 +274,43 @@ async function reportShopLocation(shop, messageAuthor, messageTimestamp, credite
       RETURNING *
     `;
 
-    // Create one report per credited user
-    for (const reporterUsername of reportersToCredit) {
-      try {
-        const notes = creditedUsers.length > 0
-          ? `Auto-reported from Discord by ${messageAuthor}. Part of group credit: ${creditedUsers.join(', ')}`
-          : `Auto-reported from Discord by ${messageAuthor}`;
+    try {
+      const result = await pool.query(insertQuery, [
+        shop.name,
+        'shop',
+        shop.coordinate.x,
+        shop.coordinate.y,
+        shop.streetName,
+        shop.streetNumber,
+        primaryReporter,
+        notes
+      ]);
 
-        const result = await pool.query(insertQuery, [
-          shop.name,
-          'shop',
-          shop.coordinate.x,
-          shop.coordinate.y,
-          shop.streetName,
-          shop.streetNumber,
-          reporterUsername,
-          notes
-        ]);
+      const newReport = result.rows[0];
 
-        const newReport = result.rows[0];
-        successfulReports++;
+      logInfo('Shop location reported successfully', {
+        report_id: newReport.id,
+        shop_name: newReport.building_name,
+        coordinates: { x: newReport.coordinate_x, y: newReport.coordinate_y },
+        location: `${shop.streetName} & ${shop.streetNumber}`,
+        primary_reporter: primaryReporter,
+        all_credited_users: allCreditedUsers,
+        discord_author: messageAuthor,
+        message_timestamp: messageTimestamp.toISOString(),
+        group_credit: creditedUsers.length > 1,
+        time_limit_bypassed: bypassTimeLimit
+      });
 
-        logInfo('Shop location reported successfully', {
-          report_id: newReport.id,
-          shop_name: newReport.building_name,
-          coordinates: { x: newReport.coordinate_x, y: newReport.coordinate_y },
-          location: `${shop.streetName} & ${shop.streetNumber}`,
-          credited_to: reporterUsername,
-          discord_author: messageAuthor,
-          message_timestamp: messageTimestamp.toISOString(),
-          group_credit: creditedUsers.length > 1,
-          time_limit_bypassed: bypassTimeLimit
-        });
-      } catch (reportError) {
-        logError('Failed to create individual report', reportError, {
-          shop_name: shop.name,
-          credited_to: reporterUsername,
-          discord_author: messageAuthor
-        });
-      }
+      return { success: true, reports: 1 };
+
+    } catch (reportError) {
+      logError('Failed to create report', reportError, {
+        shop_name: shop.name,
+        primary_reporter: primaryReporter,
+        discord_author: messageAuthor
+      });
+      return { success: false, reports: 0 };
     }
-
-    return { success: successfulReports > 0, reports: successfulReports };
   } catch (error) {
     logError('Failed to report shop location', error, {
       shop_name: shop.name,
