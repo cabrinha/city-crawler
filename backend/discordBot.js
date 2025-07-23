@@ -144,13 +144,29 @@ function parseShopLocations(messageContent) {
       continue;
     }
 
-    // Remove bold formatting
-    const cleanLine = line.replace(/\*\*\*/g, '').trim();
+    // Remove bold formatting and other Discord formatting
+    const cleanLine = line.replace(/\*\*\*/g, '').replace(/\*\*/g, '').replace(/\*/g, '').trim();
 
-    // Look for patterns like "Shop Name - Street & Number" or "Shop Name, right by Street & Number"
+    // Debug logging for pattern matching
+    if (cleanLine.length > 0 && !cleanLine.toLowerCase().includes('credit') && !cleanLine.includes('NEXT MOVE:') && !cleanLine.includes('<t:')) {
+      logInfo('Attempting to parse line', {
+        original_line: line,
+        clean_line: cleanLine,
+        line_length: cleanLine.length
+      });
+    }
+
+    // Look for various patterns matching Discord shop reports
     const patterns = [
       /^(.+?)\s*-\s*(.+?)\s*&\s*(.+?)$/,  // "Shop Name - Street & Number"
       /^(.+?),\s*right\s+by\s+(.+?)\s*&\s*(.+?)$/,  // "Shop Name, right by Street & Number"
+
+      // Patterns with "and" instead of "&" (common in Discord messages)
+      /^(.+?)\s*-\s*(.+?)\s+and\s+(.+?)$/,  // "Shop Name - Street and Number"
+      /^(.+?),\s*right\s+by\s+(.+?)\s+and\s+(.+?)$/,  // "Shop Name, right by Street and Number"
+      /^(.+?)\s*at\s+(.+?)\s+and\s+(.+?)$/,  // "Shop Name at Street and Number"
+      /^(.+?)\s*on\s+(.+?)\s+and\s+(.+?)$/,  // "Shop Name on Street and Number"
+      /^(.+?),\s*(.+?)\s+and\s+(.+?)$/,      // "Shop Name, Street and Number"
     ];
 
     for (const pattern of patterns) {
@@ -576,7 +592,7 @@ client.on('interactionCreate', async (interaction) => {
   if (commandName === 'parse-shops') {
     try {
       // Defer the reply since processing might take a while
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: 64 }); // 64 = EPHEMERAL flag
 
       const messageId = interaction.options.getString('message_id');
       const channelId = interaction.channelId;
@@ -621,7 +637,7 @@ client.on('interactionCreate', async (interaction) => {
       if (interaction.deferred) {
         await interaction.editReply(errorMessage);
       } else {
-        await interaction.reply({ content: errorMessage, ephemeral: true });
+        await interaction.reply({ content: errorMessage, flags: 64 }); // 64 = EPHEMERAL flag
       }
     }
   }
