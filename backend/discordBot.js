@@ -809,9 +809,9 @@ client.on('ready', async () => {
   // Register slash commands
   await registerSlashCommands();
 
-    // Log monitoring channels and verify access
-  const SHOP_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
-  const GUILD_CHANNEL_ID = '1374842501839458334';
+  // Log monitoring channels and verify access
+  const SHOP_CHANNEL_ID = process.env.DISCORD_SHOPS_CHANNEL_ID;
+  const GUILD_CHANNEL_ID = process.env.DISCORD_GUILDS_CHANNEL_ID;
 
   logInfo('Message monitoring configured', {
     shop_channel_id: SHOP_CHANNEL_ID,
@@ -848,8 +848,8 @@ client.on('ready', async () => {
 
 // Event-driven message monitoring for both shops and guilds
 client.on('messageCreate', async (message) => {
-  const SHOP_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
-  const GUILD_CHANNEL_ID = '1374842501839458334'; // Guild channel ID
+  const SHOP_CHANNEL_ID = process.env.DISCORD_SHOPS_CHANNEL_ID;
+  const GUILD_CHANNEL_ID = process.env.DISCORD_GUILDS_CHANNEL_ID;
 
   // Skip messages from bots
   if (message.author.bot) {
@@ -1110,14 +1110,22 @@ export function startDiscordBot() {
     return;
   }
 
-  const channelId = process.env.DISCORD_CHANNEL_ID;
-  if (!channelId) {
-    logError('DISCORD_CHANNEL_ID environment variable not set');
+  const shopsChannelId = process.env.DISCORD_SHOPS_CHANNEL_ID;
+  const guildsChannelId = process.env.DISCORD_GUILDS_CHANNEL_ID;
+
+  if (!shopsChannelId) {
+    logError('DISCORD_SHOPS_CHANNEL_ID environment variable not set');
+    return;
+  }
+
+  if (!guildsChannelId) {
+    logError('DISCORD_GUILDS_CHANNEL_ID environment variable not set');
     return;
   }
 
   logInfo('Starting Discord bot', {
-    channel_id: channelId
+    shops_channel_id: shopsChannelId,
+    guilds_channel_id: guildsChannelId
   });
 
   client.login(token).catch(error => {

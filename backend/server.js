@@ -727,12 +727,12 @@ app.listen(port, () => {
   console.log(`🗄️  Database: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'city_crawler'}`);
 
   // Start Discord bot if environment variables are configured
-  if (process.env.DISCORD_BOT_TOKEN && process.env.DISCORD_CHANNEL_ID) {
-    console.log(`🤖 Starting Discord bot for channel: ${process.env.DISCORD_CHANNEL_ID}`);
-    startDiscordBot();
-  } else {
-    console.log(`⚠️  Discord bot disabled - missing DISCORD_BOT_TOKEN or DISCORD_CHANNEL_ID environment variables`);
-  }
+  if (process.env.DISCORD_BOT_TOKEN && process.env.DISCORD_SHOPS_CHANNEL_ID && process.env.DISCORD_GUILDS_CHANNEL_ID) {
+  console.log(`🤖 Starting Discord bot for channels: shops=${process.env.DISCORD_SHOPS_CHANNEL_ID}, guilds=${process.env.DISCORD_GUILDS_CHANNEL_ID}`);
+  startDiscordBot();
+} else {
+  console.log(`⚠️  Discord bot disabled - missing DISCORD_BOT_TOKEN, DISCORD_SHOPS_CHANNEL_ID, or DISCORD_GUILDS_CHANNEL_ID environment variables`);
+}
 });
 
 // Graceful shutdown

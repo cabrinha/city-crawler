@@ -103,7 +103,8 @@ To enable the Discord bot, add these environment variables to your `.env` file:
 ```bash
 # Discord Bot Configuration
 DISCORD_BOT_TOKEN=your_bot_token_here
-DISCORD_CHANNEL_ID=1308920592279539742
+DISCORD_SHOPS_CHANNEL_ID=1374842471057457312
+DISCORD_GUILDS_CHANNEL_ID=1374842501839458334
 
 # Database Configuration
 DB_HOST=localhost
