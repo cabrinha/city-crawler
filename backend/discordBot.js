@@ -809,99 +809,86 @@ client.on('ready', async () => {
   // Register slash commands
   await registerSlashCommands();
 
-  // Start message monitoring using awaitMessages
-  startMessageMonitoring().catch(error => {
-    logError('Failed to start message monitoring', error);
+    // Log monitoring channels and verify access
+  const SHOP_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
+  const GUILD_CHANNEL_ID = '1374842501839458334';
+
+  logInfo('Message monitoring configured', {
+    shop_channel_id: SHOP_CHANNEL_ID,
+    guild_channel_id: GUILD_CHANNEL_ID,
+    monitoring_method: 'messageCreate_event'
   });
+
+  // Verify bot can access both channels
+  try {
+    if (SHOP_CHANNEL_ID) {
+      const shopChannel = await client.channels.fetch(SHOP_CHANNEL_ID);
+      logInfo('Shop channel access verified', {
+        channel_id: SHOP_CHANNEL_ID,
+        channel_name: shopChannel?.name,
+        channel_type: shopChannel?.type,
+        can_view: !!shopChannel
+      });
+    }
+
+    const guildChannel = await client.channels.fetch(GUILD_CHANNEL_ID);
+    logInfo('Guild channel access verified', {
+      channel_id: GUILD_CHANNEL_ID,
+      channel_name: guildChannel?.name,
+      channel_type: guildChannel?.type,
+      can_view: !!guildChannel
+    });
+  } catch (error) {
+    logError('Failed to verify channel access', error, {
+      shop_channel_id: SHOP_CHANNEL_ID,
+      guild_channel_id: GUILD_CHANNEL_ID
+    });
+  }
 });
 
-// Continuous message monitoring using awaitMessages for both shops and guilds
-async function startMessageMonitoring() {
+// Event-driven message monitoring for both shops and guilds
+client.on('messageCreate', async (message) => {
   const SHOP_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
   const GUILD_CHANNEL_ID = '1374842501839458334'; // Guild channel ID
 
-  if (!SHOP_CHANNEL_ID) {
-    logError('DISCORD_CHANNEL_ID environment variable not set');
+  // Skip messages from bots
+  if (message.author.bot) {
     return;
   }
 
-  let lastProcessedMessageTime = new Date();
+  // Determine message type based on channel
+  let messageType = null;
+  if (message.channel.id === SHOP_CHANNEL_ID) {
+    messageType = 'shop';
+  } else if (message.channel.id === GUILD_CHANNEL_ID) {
+    messageType = 'guild';
+  } else {
+    // Not a monitored channel, skip
+    return;
+  }
 
-  logInfo('Starting continuous message monitoring', {
-    shop_channel_id: SHOP_CHANNEL_ID,
-    guild_channel_id: GUILD_CHANNEL_ID,
-    monitoring_method: 'awaitMessages'
+  logInfo('Discord message received', {
+    author: message.author.username,
+    channel: message.channel.name,
+    channel_id: message.channel.id,
+    message_id: message.id,
+    timestamp: message.createdAt.toISOString(),
+    content_length: message.content.length,
+    message_type: messageType,
+    is_monitored: true
   });
 
-  // Monitor both channels simultaneously
-  async function monitorChannel(channelId, channelType) {
-    try {
-      const channel = await client.channels.fetch(channelId);
-      if (!channel || !channel.isTextBased()) {
-        logError(`${channelType} channel not found or not text-based`, { channel_id: channelId });
-        return [];
-      }
-
-      // Collect messages for 30 seconds, filtering for non-bot messages posted after our last check
-      const collected = await channel.awaitMessages({
-        filter: (message) => {
-          return !message.author.bot && message.createdAt > lastProcessedMessageTime;
-        },
-        time: 30000, // Collect for 30 seconds
-        errors: [] // Don't throw errors on timeout
-      });
-
-      if (collected.size > 0) {
-        logInfo(`Collected ${channelType} messages for processing`, {
-          message_count: collected.size,
-          channel_id: channelId,
-          collection_window: '30s'
-        });
-
-        return Array.from(collected.values()).map(msg => ({ message: msg, type: channelType }));
-      }
-
-      return [];
-    } catch (error) {
-      logError(`Error monitoring ${channelType} channel`, error, { channel_id: channelId });
-      return [];
-    }
+  try {
+    await processDiscordMessage(message, messageType);
+  } catch (error) {
+    logError('Error processing Discord message', error, {
+      message_id: message.id,
+      author: message.author.username,
+      channel_id: message.channel.id,
+      message_type: messageType
+    });
   }
-
-  while (true) {
-    try {
-      // Monitor both channels in parallel
-      const [shopMessages, guildMessages] = await Promise.all([
-        monitorChannel(SHOP_CHANNEL_ID, 'shop'),
-        monitorChannel(GUILD_CHANNEL_ID, 'guild')
-      ]);
-
-      // Combine and process all messages
-      const allMessages = [...shopMessages, ...guildMessages];
-
-      if (allMessages.length > 0) {
-        // Sort by timestamp to process in chronological order
-        allMessages.sort((a, b) => a.message.createdAt - b.message.createdAt);
-
-        for (const { message, type } of allMessages) {
-          await processDiscordMessage(message, type);
-
-          // Update our last processed time
-          if (message.createdAt > lastProcessedMessageTime) {
-            lastProcessedMessageTime = message.createdAt;
-          }
-        }
-      }
-
-      // Small delay before next collection cycle
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-    } catch (error) {
-      logError('Error in message monitoring loop', error);
-      await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds before retry
-    }
-  }
-}
+});
 
 // Extract message processing logic into separate function
 async function processDiscordMessage(message, messageType = 'shop') {
