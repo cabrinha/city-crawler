@@ -851,8 +851,24 @@ client.on('messageCreate', async (message) => {
   const SHOP_CHANNEL_ID = process.env.DISCORD_SHOPS_CHANNEL_ID;
   const GUILD_CHANNEL_ID = process.env.DISCORD_GUILDS_CHANNEL_ID;
 
+  // Log ALL messages received (for debugging)
+  logInfo('Message received from any channel', {
+    author: message.author.username,
+    channel_id: message.channel.id,
+    channel_name: message.channel.name,
+    is_bot: message.author.bot,
+    guild_id: message.guild?.id,
+    expected_shop_channel: SHOP_CHANNEL_ID,
+    expected_guild_channel: GUILD_CHANNEL_ID,
+    content_preview: message.content.substring(0, 50) + (message.content.length > 50 ? '...' : '')
+  });
+
   // Skip messages from bots
   if (message.author.bot) {
+    logInfo('Skipping bot message', {
+      author: message.author.username,
+      channel_id: message.channel.id
+    });
     return;
   }
 
@@ -864,6 +880,13 @@ client.on('messageCreate', async (message) => {
     messageType = 'guild';
   } else {
     // Not a monitored channel, skip
+    logInfo('Message from unmonitored channel', {
+      author: message.author.username,
+      channel_id: message.channel.id,
+      channel_name: message.channel.name,
+      expected_shop_channel: SHOP_CHANNEL_ID,
+      expected_guild_channel: GUILD_CHANNEL_ID
+    });
     return;
   }
 
@@ -1100,6 +1123,18 @@ client.on('interactionCreate', async (interaction) => {
 
 client.on('error', (error) => {
   logError('Discord client error', error);
+});
+
+client.on('disconnect', () => {
+  logWarning('Discord client disconnected');
+});
+
+client.on('reconnecting', () => {
+  logInfo('Discord client reconnecting');
+});
+
+client.on('warn', (warning) => {
+  logWarning('Discord client warning', { warning });
 });
 
 // Start the bot
