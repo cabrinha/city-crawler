@@ -863,14 +863,16 @@ client.on('messageCreate', async (message) => {
     content_preview: message.content.substring(0, 50) + (message.content.length > 50 ? '...' : '')
   });
 
-  // Skip messages from bots
-  if (message.author.bot) {
-    logInfo('Skipping bot message', {
-      author: message.author.username,
-      channel_id: message.channel.id
-    });
-    return;
-  }
+  // Allow messages from bots because messages come from
+  // external server
+  // // Skip messages from bots
+  // if (message.author.bot) {
+  //   logInfo('Skipping bot message', {
+  //     author: message.author.username,
+  //     channel_id: message.channel.id
+  //   });
+  //   return;
+  // }
 
   // Determine message type based on channel
   let messageType = null;
