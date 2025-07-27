@@ -813,36 +813,24 @@ client.on('ready', async () => {
   const SHOP_CHANNEL_ID = process.env.DISCORD_SHOPS_CHANNEL_ID;
   const GUILD_CHANNEL_ID = process.env.DISCORD_GUILDS_CHANNEL_ID;
 
-  logInfo('Message monitoring configured', {
-    shop_channel_id: SHOP_CHANNEL_ID,
-    guild_channel_id: GUILD_CHANNEL_ID,
-    monitoring_method: 'messageCreate_event'
+  logInfo('Discord bot monitoring channels', {
+    shops_channel: SHOP_CHANNEL_ID,
+    guilds_channel: GUILD_CHANNEL_ID
   });
 
   // Verify bot can access both channels
   try {
     if (SHOP_CHANNEL_ID) {
       const shopChannel = await client.channels.fetch(SHOP_CHANNEL_ID);
-      logInfo('Shop channel access verified', {
-        channel_id: SHOP_CHANNEL_ID,
-        channel_name: shopChannel?.name,
-        channel_type: shopChannel?.type,
-        can_view: !!shopChannel
-      });
+      logInfo('Shops channel verified', { name: shopChannel?.name });
     }
 
-    const guildChannel = await client.channels.fetch(GUILD_CHANNEL_ID);
-    logInfo('Guild channel access verified', {
-      channel_id: GUILD_CHANNEL_ID,
-      channel_name: guildChannel?.name,
-      channel_type: guildChannel?.type,
-      can_view: !!guildChannel
-    });
+    if (GUILD_CHANNEL_ID) {
+      const guildChannel = await client.channels.fetch(GUILD_CHANNEL_ID);
+      logInfo('Guilds channel verified', { name: guildChannel?.name });
+    }
   } catch (error) {
-    logError('Failed to verify channel access', error, {
-      shop_channel_id: SHOP_CHANNEL_ID,
-      guild_channel_id: GUILD_CHANNEL_ID
-    });
+    logError('Failed to verify channel access', error);
   }
 });
 
@@ -851,56 +839,24 @@ client.on('messageCreate', async (message) => {
   const SHOP_CHANNEL_ID = process.env.DISCORD_SHOPS_CHANNEL_ID;
   const GUILD_CHANNEL_ID = process.env.DISCORD_GUILDS_CHANNEL_ID;
 
-  // Log ALL messages received (for debugging)
-  logInfo('Message received from any channel', {
-    author: message.author.username,
-    channel_id: message.channel.id,
-    channel_name: message.channel.name,
-    is_bot: message.author.bot,
-    guild_id: message.guild?.id,
-    expected_shop_channel: SHOP_CHANNEL_ID,
-    expected_guild_channel: GUILD_CHANNEL_ID,
-    content_preview: message.content.substring(0, 50) + (message.content.length > 50 ? '...' : '')
-  });
-
-  // Allow messages from bots because messages come from
-  // external server
-  // // Skip messages from bots
-  // if (message.author.bot) {
-  //   logInfo('Skipping bot message', {
-  //     author: message.author.username,
-  //     channel_id: message.channel.id
-  //   });
-  //   return;
-  // }
-
-  // Determine message type based on channel
+  // Only process messages from monitored channels
   let messageType = null;
   if (message.channel.id === SHOP_CHANNEL_ID) {
     messageType = 'shop';
   } else if (message.channel.id === GUILD_CHANNEL_ID) {
     messageType = 'guild';
   } else {
-    // Not a monitored channel, skip
-    logInfo('Message from unmonitored channel', {
-      author: message.author.username,
-      channel_id: message.channel.id,
-      channel_name: message.channel.name,
-      expected_shop_channel: SHOP_CHANNEL_ID,
-      expected_guild_channel: GUILD_CHANNEL_ID
-    });
+    // Not a monitored channel, skip silently
     return;
   }
 
-  logInfo('Discord message received', {
+  // Note: We process bot messages since shop/guild locations are posted by bots
+
+  logInfo('Processing Discord message', {
     author: message.author.username,
-    channel: message.channel.name,
-    channel_id: message.channel.id,
-    message_id: message.id,
-    timestamp: message.createdAt.toISOString(),
-    content_length: message.content.length,
     message_type: messageType,
-    is_monitored: true
+    message_id: message.id,
+    content_length: message.content.length
   });
 
   try {
