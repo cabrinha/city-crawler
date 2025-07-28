@@ -395,7 +395,7 @@ async function reportGuildLocation(guild, messageAuthor, messageTimestamp, credi
       WHERE building_name = $1 AND building_type = $2 AND guild_level = $3 AND is_active = TRUE
     `, [guild.name, 'guild', guild.level]);
 
-    // Create ONE report per guild with all credits in notes
+    // Create ONE location report but credit all users
     const notes = creditedUsers.length > 0
       ? `Auto-reported from Discord by ${messageAuthor}. Credits: ${creditedUsers.join(', ')}`
       : `Auto-reported from Discord by ${messageAuthor}`;
@@ -423,6 +423,31 @@ async function reportGuildLocation(guild, messageAuthor, messageTimestamp, credi
 
       const newReport = result.rows[0];
 
+      // Manually increment report counts for ALL credited users (including primary)
+      let creditsGiven = 0;
+      for (const username of allCreditedUsers) {
+        try {
+          await pool.query(`
+            UPDATE users
+            SET total_reports = total_reports + 1
+            WHERE username = $1
+          `, [username]);
+          creditsGiven++;
+
+          logInfo('Report credit given to user', {
+            username: username,
+            guild_name: guild.name,
+            guild_level: guild.level,
+            is_primary_reporter: username === primaryReporter
+          });
+        } catch (creditError) {
+          logError('Failed to increment report count for user', creditError, {
+            username: username,
+            guild_name: guild.name
+          });
+        }
+      }
+
       logInfo('Guild location reported successfully', {
         report_id: newReport.id,
         guild_name: newReport.building_name,
@@ -431,9 +456,9 @@ async function reportGuildLocation(guild, messageAuthor, messageTimestamp, credi
         location: `${guild.streetName} & ${guild.streetNumber}`,
         primary_reporter: primaryReporter,
         all_credited_users: allCreditedUsers,
+        credits_given: creditsGiven,
         discord_author: messageAuthor,
         message_timestamp: messageTimestamp.toISOString(),
-        group_credit: creditedUsers.length > 1,
         time_limit_bypassed: bypassTimeLimit
       });
 
@@ -496,7 +521,7 @@ async function reportShopLocation(shop, messageAuthor, messageTimestamp, credite
       WHERE building_name = $1 AND building_type = $2 AND is_active = TRUE
     `, [shop.name, 'shop']);
 
-    // Create ONE report per shop with all credits in notes
+    // Create ONE location report but credit all users
     const notes = creditedUsers.length > 0
       ? `Auto-reported from Discord by ${messageAuthor}. Credits: ${creditedUsers.join(', ')}`
       : `Auto-reported from Discord by ${messageAuthor}`;
@@ -523,6 +548,30 @@ async function reportShopLocation(shop, messageAuthor, messageTimestamp, credite
 
       const newReport = result.rows[0];
 
+      // Manually increment report counts for ALL credited users (including primary)
+      let creditsGiven = 0;
+      for (const username of allCreditedUsers) {
+        try {
+          await pool.query(`
+            UPDATE users
+            SET total_reports = total_reports + 1
+            WHERE username = $1
+          `, [username]);
+          creditsGiven++;
+
+          logInfo('Report credit given to user', {
+            username: username,
+            shop_name: shop.name,
+            is_primary_reporter: username === primaryReporter
+          });
+        } catch (creditError) {
+          logError('Failed to increment report count for user', creditError, {
+            username: username,
+            shop_name: shop.name
+          });
+        }
+      }
+
       logInfo('Shop location reported successfully', {
         report_id: newReport.id,
         shop_name: newReport.building_name,
@@ -530,16 +579,16 @@ async function reportShopLocation(shop, messageAuthor, messageTimestamp, credite
         location: `${shop.streetName} & ${shop.streetNumber}`,
         primary_reporter: primaryReporter,
         all_credited_users: allCreditedUsers,
+        credits_given: creditsGiven,
         discord_author: messageAuthor,
         message_timestamp: messageTimestamp.toISOString(),
-        group_credit: creditedUsers.length > 1,
         time_limit_bypassed: bypassTimeLimit
       });
 
       return { success: true, reports: 1 };
 
     } catch (reportError) {
-      logError('Failed to create report', reportError, {
+      logError('Failed to create shop report', reportError, {
         shop_name: shop.name,
         primary_reporter: primaryReporter,
         discord_author: messageAuthor

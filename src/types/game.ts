@@ -18,6 +18,7 @@ export interface ReportedLocation {
   coordinate: Coordinate;
   reportedAt: Date;
   reporterName?: string;
+  allReporters?: string[]; // Parsed from notes field to show all credited users
   confidence?: 'confirmed' | 'unverified';
   notes?: string;
   guildLevel?: 1 | 2 | 3; // Guild level for guild buildings

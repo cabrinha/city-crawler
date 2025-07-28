@@ -6,6 +6,7 @@ import { CITY_SIZE, getBuildingAt, getLocationName, getDistanceScore, BUILDINGS 
 import { ApiService } from '../services/api';
 import type { ReportedLocation } from '../types/game';
 import { NavigationPanel } from './NavigationPanel';
+import { formatReportersTooltip } from '../utils/formatters';
 
 const MapContainer = styled.div`
   width: 100%;
@@ -714,7 +715,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
             </span><br/>
             <span style="color: #ccc">
               Reported ${Math.floor((new Date().getTime() - d.reportedLocation.reportedAt.getTime()) / (1000 * 60 * 60))}h ago
-              ${d.reportedLocation.reporterName ? ` by ${d.reportedLocation.reporterName}` : ''}
+              by ${formatReportersTooltip(d.reportedLocation.allReporters, d.reportedLocation.reporterName)}
             </span><br/>` :
             d.building ? `${d.building.name} (${d.building.type})` :
             d.tileType === 'city' ? 'City Block' :

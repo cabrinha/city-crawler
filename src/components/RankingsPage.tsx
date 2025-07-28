@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { ApiService } from '../services/api';
 import { updateMetaTags } from '../main';
+import { formatTimeAgo } from '../utils/formatters';
 import type { TopContributor, BloodDeity, RichVampire } from '../types/game';
 
 const PageContainer = styled.div`
@@ -194,21 +195,7 @@ export const RankingsPage: React.FC<RankingsPageProps> = ({ onBackToMap }) => {
     loadLeaderboards();
   }, []);
 
-  const formatTimeAgo = (date: Date): string => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
 
-    if (diffHours < 1) {
-      const diffMinutes = Math.floor(diffMs / (1000 * 60));
-      return `${diffMinutes}m ago`;
-    }
-    if (diffHours < 24) {
-      return `${diffHours}h ago`;
-    }
-    return `${diffDays}d ago`;
-  };
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) {

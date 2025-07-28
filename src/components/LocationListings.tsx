@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { ApiService } from '../services/api';
 import { getLocationName } from '../data/cityData';
+import { formatReporters, formatTimeAgo } from '../utils/formatters';
 import type { ReportedLocation } from '../types/game';
 
 const ListingsContainer = styled.div`
@@ -190,21 +191,7 @@ export const LocationListings: React.FC<LocationListingsProps> = ({ onLocationUp
     loadLocations();
   }, []);
 
-  const formatTimeAgo = (date: Date): string => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
 
-    if (diffHours < 1) {
-      const diffMinutes = Math.floor(diffMs / (1000 * 60));
-      return `${diffMinutes}m ago`;
-    }
-    if (diffHours < 24) {
-      return `${diffHours}h ago`;
-    }
-    return `${diffDays}d ago`;
-  };
 
   const handleRemove = async (location: ReportedLocation) => {
     if (window.confirm(`Remove ${location.buildingName}?`)) {
@@ -254,8 +241,8 @@ export const LocationListings: React.FC<LocationListingsProps> = ({ onLocationUp
           )}
         </LocationDetails>
         <LocationMeta style={{ justifyContent: showTimeAndRemove ? 'space-between' : 'center' }}>
-          <ReportedBy>
-            Reported by {location.reporterName}
+                    <ReportedBy>
+            Reported by {formatReporters(location.allReporters, location.reporterName)}
           </ReportedBy>
           {showTimeAndRemove && (
             <TimeAgo>{formatTimeAgo(location.reportedAt)}</TimeAgo>
