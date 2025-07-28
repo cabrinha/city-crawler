@@ -395,59 +395,60 @@ async function reportGuildLocation(guild, messageAuthor, messageTimestamp, credi
       WHERE building_name = $1 AND building_type = $2 AND guild_level = $3 AND is_active = TRUE
     `, [guild.name, 'guild', guild.level]);
 
-    // Create ONE report per guild with all credits in notes
-    const notes = creditedUsers.length > 0
-      ? `Auto-reported from Discord by ${messageAuthor}. Credits: ${creditedUsers.join(', ')}`
-      : `Auto-reported from Discord by ${messageAuthor}`;
+    // Create individual reports for each credited user
+    let totalReports = 0;
+    const reportsToCreate = allCreditedUsers.length > 0 ? allCreditedUsers : [primaryReporter];
 
-    const insertQuery = `
-      INSERT INTO location_reports (
-        building_name, building_type, coordinate_x, coordinate_y,
-        street_name, street_number, guild_level, reporter_username, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING *
-    `;
+    for (const reporter of reportsToCreate) {
+      const notes = creditedUsers.length > 1
+        ? `Auto-reported from Discord by ${messageAuthor}. Group effort with: ${creditedUsers.join(', ')}`
+        : `Auto-reported from Discord by ${messageAuthor}`;
 
-    try {
-      const result = await pool.query(insertQuery, [
-        guild.name,
-        'guild',
-        guild.coordinate.x,
-        guild.coordinate.y,
-        guild.streetName,
-        guild.streetNumber,
-        guild.level,
-        primaryReporter,
-        notes
-      ]);
+      const insertQuery = `
+        INSERT INTO location_reports (
+          building_name, building_type, coordinate_x, coordinate_y,
+          street_name, street_number, guild_level, reporter_username, notes
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING *
+      `;
 
-      const newReport = result.rows[0];
+      try {
+        await pool.query(insertQuery, [
+          guild.name,
+          'guild',
+          guild.coordinate.x,
+          guild.coordinate.y,
+          guild.streetName,
+          guild.streetNumber,
+          guild.level,
+          reporter,
+          notes
+        ]);
+        totalReports++;
 
-      logInfo('Guild location reported successfully', {
-        report_id: newReport.id,
-        guild_name: newReport.building_name,
-        guild_level: newReport.guild_level,
-        coordinates: { x: newReport.coordinate_x, y: newReport.coordinate_y },
-        location: `${guild.streetName} & ${guild.streetNumber}`,
-        primary_reporter: primaryReporter,
-        all_credited_users: allCreditedUsers,
-        discord_author: messageAuthor,
-        message_timestamp: messageTimestamp.toISOString(),
-        group_credit: creditedUsers.length > 1,
-        time_limit_bypassed: bypassTimeLimit
-      });
+        logInfo('Guild location reported for individual user', {
+          guild_name: guild.name,
+          guild_level: guild.level,
+          coordinates: { x: guild.coordinate.x, y: guild.coordinate.y },
+          location: `${guild.streetName} & ${guild.streetNumber}`,
+          reporter: reporter,
+          group_size: creditedUsers.length,
+          discord_author: messageAuthor,
+          message_timestamp: messageTimestamp.toISOString(),
+          time_limit_bypassed: bypassTimeLimit
+        });
 
-      return { success: true, reports: 1 };
-
-    } catch (reportError) {
-      logError('Failed to create guild report', reportError, {
-        guild_name: guild.name,
-        guild_level: guild.level,
-        primary_reporter: primaryReporter,
-        discord_author: messageAuthor
-      });
-      return { success: false, reports: 0 };
+      } catch (reportError) {
+        logError('Failed to create individual guild report', reportError, {
+          guild_name: guild.name,
+          guild_level: guild.level,
+          reporter: reporter,
+          discord_author: messageAuthor
+        });
+      }
     }
+
+    return { success: totalReports > 0, reports: totalReports };
   } catch (error) {
     logError('Failed to report guild location', error, {
       guild_name: guild.name,
@@ -496,56 +497,56 @@ async function reportShopLocation(shop, messageAuthor, messageTimestamp, credite
       WHERE building_name = $1 AND building_type = $2 AND is_active = TRUE
     `, [shop.name, 'shop']);
 
-    // Create ONE report per shop with all credits in notes
-    const notes = creditedUsers.length > 0
-      ? `Auto-reported from Discord by ${messageAuthor}. Credits: ${creditedUsers.join(', ')}`
-      : `Auto-reported from Discord by ${messageAuthor}`;
+    // Create individual reports for each credited user
+    let totalReports = 0;
+    const reportsToCreate = allCreditedUsers.length > 0 ? allCreditedUsers : [primaryReporter];
 
-    const insertQuery = `
-      INSERT INTO location_reports (
-        building_name, building_type, coordinate_x, coordinate_y,
-        street_name, street_number, reporter_username, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *
-    `;
+    for (const reporter of reportsToCreate) {
+      const notes = creditedUsers.length > 1
+        ? `Auto-reported from Discord by ${messageAuthor}. Group effort with: ${creditedUsers.join(', ')}`
+        : `Auto-reported from Discord by ${messageAuthor}`;
 
-    try {
-      const result = await pool.query(insertQuery, [
-        shop.name,
-        'shop',
-        shop.coordinate.x,
-        shop.coordinate.y,
-        shop.streetName,
-        shop.streetNumber,
-        primaryReporter,
-        notes
-      ]);
+      const insertQuery = `
+        INSERT INTO location_reports (
+          building_name, building_type, coordinate_x, coordinate_y,
+          street_name, street_number, reporter_username, notes
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING *
+      `;
 
-      const newReport = result.rows[0];
+      try {
+        await pool.query(insertQuery, [
+          shop.name,
+          'shop',
+          shop.coordinate.x,
+          shop.coordinate.y,
+          shop.streetName,
+          shop.streetNumber,
+          reporter,
+          notes
+        ]);
+        totalReports++;
 
-      logInfo('Shop location reported successfully', {
-        report_id: newReport.id,
-        shop_name: newReport.building_name,
-        coordinates: { x: newReport.coordinate_x, y: newReport.coordinate_y },
-        location: `${shop.streetName} & ${shop.streetNumber}`,
-        primary_reporter: primaryReporter,
-        all_credited_users: allCreditedUsers,
-        discord_author: messageAuthor,
-        message_timestamp: messageTimestamp.toISOString(),
-        group_credit: creditedUsers.length > 1,
-        time_limit_bypassed: bypassTimeLimit
-      });
+        logInfo('Shop location reported for individual user', {
+          shop_name: shop.name,
+          coordinates: { x: shop.coordinate.x, y: shop.coordinate.y },
+          location: `${shop.streetName} & ${shop.streetNumber}`,
+          reporter: reporter,
+          group_size: creditedUsers.length,
+          discord_author: messageAuthor,
+          message_timestamp: messageTimestamp.toISOString()
+        });
 
-      return { success: true, reports: 1 };
-
-    } catch (reportError) {
-      logError('Failed to create report', reportError, {
-        shop_name: shop.name,
-        primary_reporter: primaryReporter,
-        discord_author: messageAuthor
-      });
-      return { success: false, reports: 0 };
+      } catch (reportError) {
+        logError('Failed to create individual report', reportError, {
+          shop_name: shop.name,
+          reporter: reporter,
+          discord_author: messageAuthor
+        });
+      }
     }
+
+    return { success: totalReports > 0, reports: totalReports };
   } catch (error) {
     logError('Failed to report shop location', error, {
       shop_name: shop.name,

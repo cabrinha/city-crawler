@@ -3,6 +3,38 @@ import type { LocationReport, ReportedLocation, TopContributor, DatabaseStats, B
 // Use environment variable or default to relative path for k8s
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || '/api';
 
+// Utility function to parse credited users from notes field
+function parseAllReporters(reporterName?: string, notes?: string): string[] {
+  const reporters: string[] = [];
+
+  // Add the primary reporter if it exists
+  if (reporterName) {
+    reporters.push(reporterName);
+  }
+
+  // Parse additional credits from notes field
+  if (notes) {
+    // Look for pattern: "Credits: user1, user2, user3"
+    const creditMatch = notes.match(/Credits:\s*(.+)/i);
+    if (creditMatch) {
+      const creditString = creditMatch[1].trim();
+      // Split by comma and clean up each name
+      const creditedUsers = creditString.split(',')
+        .map(name => name.trim())
+        .filter(name => name.length > 0);
+
+      // Add credited users that aren't already in the list
+      creditedUsers.forEach(user => {
+        if (!reporters.includes(user)) {
+          reporters.push(user);
+        }
+      });
+    }
+  }
+
+  return reporters.length > 0 ? reporters : reporterName ? [reporterName] : [];
+}
+
 // API Service for backend communication
 export class ApiService {
   private static async request<T>(
@@ -65,6 +97,7 @@ export class ApiService {
       coordinate: { x: item.coordinate_x, y: item.coordinate_y },
       reportedAt: new Date(item.reported_at),
       reporterName: item.reporter_username,
+      allReporters: parseAllReporters(item.reporter_username, item.notes),
       confidence: item.confidence,
       notes: item.notes,
       guildLevel: item.guild_level,
@@ -114,6 +147,7 @@ export class ApiService {
       coordinate: { x: data.coordinate_x, y: data.coordinate_y },
       reportedAt: new Date(data.reported_at),
       reporterName: data.reporter_username,
+      allReporters: parseAllReporters(data.reporter_username, data.notes),
       confidence: data.confidence,
       notes: data.notes,
       guildLevel: data.guild_level,
@@ -152,6 +186,7 @@ export class ApiService {
       coordinate: { x: data.coordinate_x, y: data.coordinate_y },
       reportedAt: new Date(data.reported_at),
       reporterName: data.reporter_username,
+      allReporters: parseAllReporters(data.reporter_username, data.notes),
       confidence: data.confidence,
       notes: data.notes,
       guildLevel: data.guild_level,
