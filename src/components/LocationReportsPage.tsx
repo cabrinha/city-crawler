@@ -155,21 +155,29 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
 
     // Calculate next guild movement (1st, 6th, 10th, 14th, 19th, 23rd, 27th at 12:00 AM UTC)
     const guildMovementDates = [1, 6, 10, 14, 19, 23, 27];
-    const nextGuildExpiration = new Date(now);
+    let nextGuildExpiration: Date;
 
     // Find the next guild movement date
     let nextMovementDay = guildMovementDates.find(day => day > currentDay);
 
     if (nextMovementDay) {
       // Next movement is this month
-      nextGuildExpiration.setUTCDate(nextMovementDay);
+      nextGuildExpiration = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        nextMovementDay,
+        0, 0, 0, 0
+      ));
     } else {
-      // Next movement is first day of next month
-      nextGuildExpiration.setUTCMonth(nextGuildExpiration.getUTCMonth() + 1);
-      nextGuildExpiration.setUTCDate(guildMovementDates[0]); // 1st of next month
+      // Next movement is first day of next month - use timestamp arithmetic
+      const nextMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
+      nextGuildExpiration = new Date(Date.UTC(
+        nextMonth.getUTCFullYear(),
+        nextMonth.getUTCMonth(),
+        guildMovementDates[0], // 1st of next month
+        0, 0, 0, 0
+      ));
     }
-
-    nextGuildExpiration.setUTCHours(0, 0, 0, 0); // 12:00 AM UTC
 
     // Calculate time differences
     const shopDiff = nextShopExpiration.getTime() - now.getTime();
