@@ -118,11 +118,12 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
 
   const calculateCountdown = () => {
     const now = new Date();
+    const currentHour = now.getUTCHours();
+    const currentMinute = now.getUTCMinutes();
+    const currentDay = now.getUTCDate();
 
     // Calculate next shop expiration (10:40 GMT and 22:40 GMT)
     const nextShopExpiration = new Date(now);
-    const currentHour = now.getUTCHours();
-    const currentMinute = now.getUTCMinutes();
 
     if (currentHour < 10 || (currentHour === 10 && currentMinute < 40)) {
       // Next is today at 10:40
@@ -139,9 +140,6 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
     // Calculate next guild movement (1st, 6th, 10th, 14th, 19th, 23rd, 27th at 12:00 AM UTC)
     const guildMovementDates = [1, 6, 10, 14, 19, 23, 27];
     const nextGuildExpiration = new Date(now);
-    const currentDay = now.getUTCDate();
-    const currentHour = now.getUTCHours();
-    const currentMinute = now.getUTCMinutes();
 
     // Find the next guild movement date
     let nextMovementDay = guildMovementDates.find(day => {
