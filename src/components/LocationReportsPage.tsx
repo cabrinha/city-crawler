@@ -123,19 +123,34 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
     const currentDay = now.getUTCDate();
 
     // Calculate next shop expiration (10:40 GMT and 22:40 GMT)
-    const nextShopExpiration = new Date(now);
+    let nextShopExpiration: Date;
 
     if (currentHour < 10 || (currentHour === 10 && currentMinute < 40)) {
       // Next is today at 10:40
-      nextShopExpiration.setUTCHours(10, 40, 0, 0);
+      nextShopExpiration = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        10, 40, 0, 0
+      ));
     } else if (currentHour < 22 || (currentHour === 22 && currentMinute < 40)) {
       // Next is today at 22:40
-      nextShopExpiration.setUTCHours(22, 40, 0, 0);
+      nextShopExpiration = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        22, 40, 0, 0
+      ));
     } else {
-      // Next is tomorrow at 10:40 - add exactly 24 hours then set time
-      const tomorrowMidnight = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-      nextShopExpiration.setTime(tomorrowMidnight.getTime());
-      nextShopExpiration.setUTCHours(10, 40, 0, 0);
+      // Next is tomorrow at 10:40 - add 24 hours to avoid month boundary issues
+      const tomorrowTimestamp = now.getTime() + (24 * 60 * 60 * 1000);
+      const tomorrow = new Date(tomorrowTimestamp);
+      nextShopExpiration = new Date(Date.UTC(
+        tomorrow.getUTCFullYear(),
+        tomorrow.getUTCMonth(),
+        tomorrow.getUTCDate(),
+        10, 40, 0, 0
+      ));
     }
 
     // Calculate next guild movement (1st, 6th, 10th, 14th, 19th, 23rd, 27th at 12:00 AM UTC)
