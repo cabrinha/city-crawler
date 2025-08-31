@@ -132,9 +132,9 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
       // Next is today at 22:40
       nextShopExpiration.setUTCHours(22, 40, 0, 0);
     } else {
-      // Next is tomorrow at 10:40 - use more robust date calculation
-      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-      nextShopExpiration.setUTCFullYear(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate());
+      // Next is tomorrow at 10:40 - add exactly 24 hours then set time
+      const tomorrowMidnight = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      nextShopExpiration.setTime(tomorrowMidnight.getTime());
       nextShopExpiration.setUTCHours(10, 40, 0, 0);
     }
 
