@@ -1,6 +1,6 @@
 # Multi-stage Docker build for City Crawler
 # Stage 1: Build the React frontend
-FROM node:18-alpine AS frontend-builder
+FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ COPY vite.config.ts ./
 RUN npm run build
 
 # Stage 2: Setup the backend with built frontend
-FROM node:18-alpine AS production
+FROM node:20-alpine AS production
 
 WORKDIR /app
 
