@@ -128,3 +128,18 @@ export interface NavigationState {
   isNavigating: boolean;
   showRouteOnMap: boolean;
 }
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  basePrice: number;
+  category: 'weapon' | 'armor' | 'consumable' | 'misc';
+}
+
+export interface ShoppingCalculation {
+  originalPrice: number;
+  discountedPrice: number;
+  charismaDiscount: number;
+  totalDiscount: number;
+  savings: number;
+}
