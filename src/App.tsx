@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { D3CityMap } from './components/D3CityMap';
 import { LocationReportsPage } from './components/LocationReportsPage';
 import { RankingsPage } from './components/RankingsPage';
+import { ShoppingCalculatorPage } from './components/ShoppingCalculatorPage';
 import { updateMetaTags } from './main';
 import type { GameState } from './types/game';
 
@@ -101,6 +102,7 @@ function App() {
 
   const goToLocations = () => navigate('/locations');
   const goToRankings = () => navigate('/rankings');
+  const goToShopping = () => navigate('/shopping');
   const goToMap = () => navigate('/');
 
   const isMapPage = location.pathname === '/';
@@ -120,6 +122,9 @@ function App() {
             </NavigationButton>
             <NavigationButton onClick={goToRankings}>
               Rankings
+            </NavigationButton>
+            <NavigationButton onClick={goToShopping}>
+              Shopping
             </NavigationButton>
             <GitHubLink
               href="https://github.com/cabrinha/city-crawler"
@@ -152,6 +157,10 @@ function App() {
         <Route
           path="/rankings"
           element={<RankingsPage onBackToMap={goToMap} />}
+        />
+        <Route
+          path="/shopping"
+          element={<ShoppingCalculatorPage onBackToMap={goToMap} />}
         />
       </Routes>
     </AppContainer>
