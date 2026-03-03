@@ -8,45 +8,8 @@ const PageContainer = styled.div`
   background-color: #000;
   color: #fff;
   font-family: 'Courier New', monospace;
-  padding: 80px 20px 20px;
+  padding: 70px 20px 20px;
   overflow-y: auto;
-`;
-
-const Header = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 200;
-  background-color: rgba(0, 0, 0, 0.9);
-  padding: 15px 20px;
-  border-bottom: 1px solid #666;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const Title = styled.h1`
-  margin: 0;
-  color: #ff4444;
-  font-size: 24px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-`;
-
-const BackButton = styled.button`
-  background: #cc3333;
-  color: #fff;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
-  transition: background 0.3s ease;
-
-  &:hover {
-    background: #aa2222;
-  }
 `;
 
 const ContentContainer = styled.div`
@@ -442,11 +405,7 @@ const SHOP_ITEMS: ShopItem[] = [
   { id: '18', name: 'Diamond Ring', basePrice: 63000, category: 'misc' },
 ];
 
-interface ShoppingCalculatorPageProps {
-  onBackToMap: () => void;
-}
-
-export const ShoppingCalculatorPage: React.FC<ShoppingCalculatorPageProps> = ({ onBackToMap }) => {
+export const ShoppingCalculatorPage: React.FC = () => {
   const [charismaLevel, setCharismaLevel] = useState<number>(1);
   const [isDiscountShop, setIsDiscountShop] = useState<boolean>(false);
   const [itemQuantities, setItemQuantities] = useState<Record<string, number>>({});
@@ -524,13 +483,6 @@ export const ShoppingCalculatorPage: React.FC<ShoppingCalculatorPageProps> = ({ 
 
   return (
     <PageContainer>
-      <Header>
-        <Title>🛍️ Shopping Calculator</Title>
-        <BackButton onClick={onBackToMap}>
-          ← Back to Map
-        </BackButton>
-      </Header>
-
       <ContentContainer>
         <Section>
           <SectionTitle>Calculator Settings</SectionTitle>

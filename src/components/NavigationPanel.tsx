@@ -289,9 +289,9 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
     }
   }, [navigationState.startLocation, navigationState.destination]);
 
-  // Initialize start location with player's current location, but allow user changes
+  // Sync start location whenever the player sets their position on the map
   useEffect(() => {
-    if (playerLocation && !startSelection.streetName) {
+    if (playerLocation && playerLocation.x > 0) {
       const streetName = getStreetName(playerLocation.x);
       const streetNumber = getStreetNumber(playerLocation.y);
       setStartSelection({
@@ -300,7 +300,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
         streetNumber
       });
     }
-  }, [playerLocation, startSelection.streetName]);
+  }, [playerLocation]);
 
   // Helper function to convert street name to coordinate
   const streetNameToCoordinate = (streetName: string): number => {

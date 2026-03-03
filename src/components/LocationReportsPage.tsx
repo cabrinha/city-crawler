@@ -7,7 +7,7 @@ const PageContainer = styled.div`
   min-height: 100vh;
   background: #000;
   color: #fff;
-  padding: 20px;
+  padding: 70px 20px 20px;
 `;
 
 const PageTitle = styled.h1`
@@ -89,29 +89,7 @@ const ContentContainer = styled.div`
   justify-content: center;
 `;
 
-const BackToMapButton = styled.button`
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  background: #cc3333;
-  color: #fff;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  z-index: 1000;
-
-  &:hover {
-    background: #aa2222;
-  }
-`;
-
-interface LocationReportsPageProps {
-  onBackToMap?: () => void;
-}
-
-export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBackToMap }) => {
+export const LocationReportsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'report' | 'listings'>('report');
   const [refreshKey, setRefreshKey] = useState(0);
   const [countdown, setCountdown] = useState({ shops: '', guilds: '' });
@@ -227,12 +205,6 @@ export const LocationReportsPage: React.FC<LocationReportsPageProps> = ({ onBack
 
   return (
     <PageContainer>
-      {onBackToMap && (
-        <BackToMapButton onClick={onBackToMap}>
-          ← Back to Map
-        </BackToMapButton>
-      )}
-
       <PageTitle>Report Shops & Guilds</PageTitle>
 
       <CountdownContainer>
