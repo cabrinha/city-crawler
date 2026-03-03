@@ -17,7 +17,7 @@ const AppContainer = styled.div`
 `;
 
 const Header = styled.header`
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -44,8 +44,8 @@ const GameStats = styled.div`
   align-items: center;
 `;
 
-const NavigationButton = styled.button`
-  background: #cc3333;
+const NavigationButton = styled.button<{ $active?: boolean }>`
+  background: ${props => props.$active ? '#881111' : '#cc3333'};
   color: #fff;
   border: none;
   padding: 8px 16px;
@@ -54,9 +54,10 @@ const NavigationButton = styled.button`
   font-size: 14px;
   font-weight: bold;
   transition: background 0.3s ease;
+  opacity: ${props => props.$active ? 0.7 : 1};
 
   &:hover {
-    background: #aa2222;
+    background: ${props => props.$active ? '#881111' : '#aa2222'};
   }
 `;
 
@@ -90,13 +91,14 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const [gameState] = useState<GameState>({
-    playerLocation: { x: 0, y: 0 }, // No default location - user must set their position
+    playerLocation: { x: 0, y: 0 },
     actionPoints: 8,
     maxActionPoints: 90,
     bloodPints: 105449,
     coins: 1000,
     rank: 'Blood Deity'
   });
+  const [playerLocation, setPlayerLocation] = useState(gameState.playerLocation);
 
 
 
@@ -105,7 +107,7 @@ function App() {
   const goToShopping = () => navigate('/shopping');
   const goToMap = () => navigate('/');
 
-  const isMapPage = location.pathname === '/';
+  const currentPath = location.pathname;
 
   useEffect(() => {
     updateMetaTags();
@@ -113,54 +115,56 @@ function App() {
 
   return (
     <AppContainer>
-      {isMapPage && (
-        <Header>
-          <Title>Vespertine's City Crawler</Title>
-          <GameStats>
-            <NavigationButton onClick={goToLocations}>
-              Locations
-            </NavigationButton>
-            <NavigationButton onClick={goToRankings}>
-              Rankings
-            </NavigationButton>
-            <NavigationButton onClick={goToShopping}>
-              Shopping
-            </NavigationButton>
-            <GitHubLink
-              href="https://github.com/cabrinha/city-crawler"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="View on GitHub"
-              aria-label="View source code on GitHub"
-            >
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M12 0C5.374 0 0 5.373 0 12 0 17.302 3.438 21.8 8.207 23.387c.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-              </svg>
-            </GitHubLink>
-          </GameStats>
-        </Header>
-      )}
+      <Header>
+        <Title>Vespertine's City Crawler</Title>
+        <GameStats>
+          <NavigationButton onClick={goToMap} $active={currentPath === '/'}>
+            Map
+          </NavigationButton>
+          <NavigationButton onClick={goToLocations} $active={currentPath === '/locations'}>
+            Locations
+          </NavigationButton>
+          <NavigationButton onClick={goToRankings} $active={currentPath === '/rankings'}>
+            Rankings
+          </NavigationButton>
+          <NavigationButton onClick={goToShopping} $active={currentPath === '/shopping'}>
+            Shopping
+          </NavigationButton>
+          <GitHubLink
+            href="https://github.com/cabrinha/city-crawler"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="View on GitHub"
+            aria-label="View source code on GitHub"
+          >
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M12 0C5.374 0 0 5.373 0 12 0 17.302 3.438 21.8 8.207 23.387c.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+            </svg>
+          </GitHubLink>
+        </GameStats>
+      </Header>
 
       <Routes>
         <Route
           path="/"
           element={
             <D3CityMap
-              playerLocation={gameState.playerLocation}
+              playerLocation={playerLocation}
+              onPlayerLocationChange={setPlayerLocation}
             />
           }
         />
         <Route
           path="/locations"
-          element={<LocationReportsPage onBackToMap={goToMap} />}
+          element={<LocationReportsPage />}
         />
         <Route
           path="/rankings"
-          element={<RankingsPage onBackToMap={goToMap} />}
+          element={<RankingsPage />}
         />
         <Route
           path="/shopping"
-          element={<ShoppingCalculatorPage onBackToMap={goToMap} />}
+          element={<ShoppingCalculatorPage />}
         />
       </Routes>
     </AppContainer>

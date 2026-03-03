@@ -128,6 +128,7 @@ interface TileData {
 
 interface D3CityMapProps {
   playerLocation?: Coordinate;
+  onPlayerLocationChange?: (coord: Coordinate) => void;
 }
 
 // Utility function to calculate Manhattan distance
@@ -201,15 +202,22 @@ const fitRouteToView = (svg: d3.Selection<SVGSVGElement, unknown, null, undefine
 };
 
 export const D3CityMap: React.FC<D3CityMapProps> = ({
-  playerLocation
+  playerLocation,
+  onPlayerLocationChange
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  // Ref to the main g element so the route overlay effect can update it without
+  // triggering a full grid rebuild.
+  const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
+  // Ref so the click callback is always current inside D3 event handlers without
+  // being a useEffect dep.
+  const onPlayerLocationChangeRef = useRef(onPlayerLocationChange);
+  onPlayerLocationChangeRef.current = onPlayerLocationChange;
+
   const [renderTime, setRenderTime] = useState(0);
   const [visibleTiles, setVisibleTiles] = useState(0);
   const [hoveredCoordinates, setHoveredCoordinates] = useState<Coordinate | null>(null);
-  const [selectedCoordinates, setSelectedCoordinates] = useState<Coordinate | null>(null);
-  const [isCoordinatesLocked, setIsCoordinatesLocked] = useState(false);
   const [isNearestBuildingsVisible, setIsNearestBuildingsVisible] = useState(true);
   const [reportedLocations, setReportedLocations] = useState<ReportedLocation[]>([]);
   const [navigationState, setNavigationState] = useState<NavigationState>({
@@ -230,10 +238,11 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     loadReportedLocations();
   }, []);
 
-  // Calculate nearest buildings (only if player location is set)
-  const nearestBanks = playerLocation ? findNearestBuildings(playerLocation, 'bank') : [];
-  const nearestPubs = playerLocation ? findNearestBuildings(playerLocation, 'pub') : [];
-  const nearestTransit = playerLocation ? findNearestBuildings(playerLocation, 'transit') : [];
+  // Only compute nearest buildings once the player has set a real location (x > 0)
+  const validPlayerLocation = playerLocation && playerLocation.x > 0 ? playerLocation : null;
+  const nearestBanks = validPlayerLocation ? findNearestBuildings(validPlayerLocation, 'bank') : [];
+  const nearestPubs = validPlayerLocation ? findNearestBuildings(validPlayerLocation, 'pub') : [];
+  const nearestTransit = validPlayerLocation ? findNearestBuildings(validPlayerLocation, 'transit') : [];
 
   // Define colors to match the actual game CSS from blood.css
   const colors = {
@@ -343,6 +352,10 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     return data;
   }, [playerLocation, reportedLocations]);
 
+  // ─── Main grid effect ────────────────────────────────────────────────────────
+  // Only re-runs when tile data changes (player location or reported locations).
+  // Navigation state and coordinate lock are intentionally excluded — they are
+  // handled via refs and a separate overlay effect below.
   useEffect(() => {
     if (!svgRef.current) return;
 
@@ -359,11 +372,13 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
 
     // Create main group for zooming/panning
     const g = svg.append('g').attr('class', 'map-group');
+    gRef.current = g;
 
     // Create grid data
     const gridData = createGridData();
 
-    // Create tiles with optimized rendering
+    // Create tiles using event delegation on the parent group so we attach
+    // 3 listeners total instead of 3 × 40,000.
     const tiles = g.selectAll('.tile')
       .data(gridData)
       .enter()
@@ -374,24 +389,18 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .attr('width', tileSize - 0.1)
       .attr('height', tileSize - 0.1)
       .attr('fill', (d: TileData) => d.tileColor)
-      .attr('stroke', colors.grid)  // White borders like the game
+      .attr('stroke', 'none')  // Start with no stroke; zoom handler enables it
       .attr('stroke-width', 0.1)
-      .style('cursor', 'pointer')
-      .on('click', function(_event, d: TileData) {
-        // Update selected coordinates state and lock for 3 seconds
-        setSelectedCoordinates({ x: d.x, y: d.y });
-        setIsCoordinatesLocked(true);
+      .style('cursor', 'pointer');
 
-        // Clear the lock after 3 seconds
-        setTimeout(() => {
-          setIsCoordinatesLocked(false);
-          setSelectedCoordinates(null);
-        }, 3000);
+    // Single delegated click handler on the group
+    g.on('click', (event) => {
+      const target = event.target as Element;
+      const d = d3.select<Element, TileData>(target).datum();
+      if (!d || !d.x) return;
 
-        // Highlight selected tile
-        tiles.attr('stroke-width', 0.1).attr('stroke', colors.grid);
-        d3.select(this).attr('stroke', '#fff').attr('stroke-width', 2);
-      });
+      onPlayerLocationChangeRef.current?.({ x: d.x, y: d.y });
+    });
 
     // Add building labels (only visible at higher zoom levels)
     const buildingLabels = g.selectAll('.building-label')
@@ -407,6 +416,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .attr('font-size', '8px')
       .attr('font-weight', 'bold')
       .style('display', 'none') // Hidden by default
+      .style('pointer-events', 'none')
       .text((d: TileData) => {
         // Reported locations take precedence
         if (d.reportedLocation) {
@@ -447,10 +457,11 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       )
       .attr('stroke', 'white')
       .attr('stroke-width', 0.5)
-      .style('display', 'none'); // Hidden by default, shown at high zoom
+      .style('display', 'none') // Hidden by default, shown at high zoom
+      .style('pointer-events', 'none');
 
-    // Add player marker (only if player location is set)
-    const playerMarker = playerLocation ? g.append('text')
+    // Add player marker (only if player has set a real location)
+    const playerMarker = (playerLocation && playerLocation.x > 0) ? g.append('text')
       .attr('class', 'player-marker')
       .attr('x', (playerLocation.x - 1) * tileSize + tileSize / 2)
       .attr('y', (playerLocation.y - 1) * tileSize + tileSize / 2)
@@ -459,124 +470,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .attr('fill', 'white')
       .attr('font-size', '12px')
       .attr('font-weight', 'bold')
+      .style('pointer-events', 'none')
       .text('★') : g.append('g'); // Empty group if no player location
-
-    // Add start location marker (when "Calculate Route" is clicked)
-    const startLocationMarker = (navigationState.isNavigating && navigationState.startLocation) ?
-      g.append('circle')
-        .attr('class', 'start-location-marker')
-        .attr('cx', (navigationState.startLocation.x - 1) * tileSize + tileSize / 2)
-        .attr('cy', (navigationState.startLocation.y - 1) * tileSize + tileSize / 2)
-        .attr('r', tileSize * 0.4)
-        .attr('fill', '#00ff00')
-        .attr('stroke', 'white')
-        .attr('stroke-width', 2)
-        .style('opacity', 0.8) : g.append('g'); // Empty group if no start location
-
-    // Add start location marker text
-    const startLocationText = (navigationState.isNavigating && navigationState.startLocation) ?
-      g.append('text')
-        .attr('class', 'start-location-text')
-        .attr('x', (navigationState.startLocation.x - 1) * tileSize + tileSize / 2)
-        .attr('y', (navigationState.startLocation.y - 1) * tileSize + tileSize / 2)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('fill', 'black')
-        .attr('font-size', '10px')
-        .attr('font-weight', 'bold')
-        .text('START') : g.append('g'); // Empty group if no start location
-
-    // Add route visualization if navigation is active
-    if (navigationState.showRouteOnMap && navigationState.currentRoute) {
-      const route = navigationState.currentRoute;
-
-      // Draw route line connecting all steps
-      if (route.steps.length > 1) {
-        const lineGenerator = d3.line<RouteStep>()
-          .x((d) => (d.coordinate.x - 1) * tileSize + tileSize / 2)
-          .y((d) => (d.coordinate.y - 1) * tileSize + tileSize / 2)
-          .curve(d3.curveLinear);
-
-        // Main route line
-        g.append('path')
-          .datum(route.steps)
-          .attr('class', 'route-line')
-          .attr('d', lineGenerator)
-          .attr('stroke', route.usesTransit ? '#00ccff' : '#00ff00')
-          .attr('stroke-width', 3)
-          .attr('fill', 'none')
-          .attr('stroke-dasharray', route.usesTransit ? '5,5' : 'none')
-          .style('opacity', 0.8);
-
-        // Add route markers for each step
-        route.steps.forEach((step, index) => {
-          if (index === 0) {
-            // Start marker
-            g.append('circle')
-              .attr('class', 'route-marker start')
-              .attr('cx', (step.coordinate.x - 1) * tileSize + tileSize / 2)
-              .attr('cy', (step.coordinate.y - 1) * tileSize + tileSize / 2)
-              .attr('r', tileSize * 0.3)
-              .attr('fill', '#00ff00')
-              .attr('stroke', 'white')
-              .attr('stroke-width', 2);
-
-            g.append('text')
-              .attr('class', 'route-marker-text')
-              .attr('x', (step.coordinate.x - 1) * tileSize + tileSize / 2)
-              .attr('y', (step.coordinate.y - 1) * tileSize + tileSize / 2)
-              .attr('text-anchor', 'middle')
-              .attr('dominant-baseline', 'middle')
-              .attr('fill', 'black')
-              .attr('font-size', '8px')
-              .attr('font-weight', 'bold')
-              .text('S');
-          } else if (index === route.steps.length - 1) {
-            // End marker
-            g.append('circle')
-              .attr('class', 'route-marker end')
-              .attr('cx', (step.coordinate.x - 1) * tileSize + tileSize / 2)
-              .attr('cy', (step.coordinate.y - 1) * tileSize + tileSize / 2)
-              .attr('r', tileSize * 0.3)
-              .attr('fill', '#ff0000')
-              .attr('stroke', 'white')
-              .attr('stroke-width', 2);
-
-            g.append('text')
-              .attr('class', 'route-marker-text')
-              .attr('x', (step.coordinate.x - 1) * tileSize + tileSize / 2)
-              .attr('y', (step.coordinate.y - 1) * tileSize + tileSize / 2)
-              .attr('text-anchor', 'middle')
-              .attr('dominant-baseline', 'middle')
-              .attr('fill', 'white')
-              .attr('font-size', '8px')
-              .attr('font-weight', 'bold')
-              .text('E');
-          } else if (step.action === 'transit') {
-            // Transit station marker
-            g.append('circle')
-              .attr('class', 'route-marker transit')
-              .attr('cx', (step.coordinate.x - 1) * tileSize + tileSize / 2)
-              .attr('cy', (step.coordinate.y - 1) * tileSize + tileSize / 2)
-              .attr('r', tileSize * 0.25)
-              .attr('fill', '#00ccff')
-              .attr('stroke', 'white')
-              .attr('stroke-width', 1);
-
-            g.append('text')
-              .attr('class', 'route-marker-text')
-              .attr('x', (step.coordinate.x - 1) * tileSize + tileSize / 2)
-              .attr('y', (step.coordinate.y - 1) * tileSize + tileSize / 2)
-              .attr('text-anchor', 'middle')
-              .attr('dominant-baseline', 'middle')
-              .attr('fill', 'black')
-              .attr('font-size', '6px')
-              .attr('font-weight', 'bold')
-              .text('T');
-          }
-        });
-      }
-    }
 
     // Add green street sign rectangles for intersections
     const streetSigns = g.selectAll('.street-sign')
@@ -589,7 +484,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .attr('width', tileSize * 0.8)
       .attr('height', tileSize * 0.3)
       .attr('fill', colors.intersectSign)
-      .attr('stroke', 'none');
+      .attr('stroke', 'none')
+      .style('pointer-events', 'none');
 
     // Add street name text on the green rectangles
     const streetNameLabels = g.selectAll('.street-name')
@@ -608,89 +504,13 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       .style('pointer-events', 'none')
       .text((d: TileData) => d.streetName || '');
 
-    // Zoom and pan behavior with performance optimizations
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 8]) // Max zoom shows 3x3 grid (viewport width / (3 * tileSize))
-      .on('zoom', (event) => {
-        const { transform } = event;
-        g.attr('transform', transform.toString());
+    // Tooltip — delegated on group to avoid 80k listeners
+    g.on('mouseover', (event) => {
+      const target = event.target as Element;
+      const d = d3.select<Element, TileData>(target).datum();
+      if (!d || !d.x) return;
 
-        // Level-of-detail rendering
-        const labelThreshold = 3;
-        const detailThreshold = 1;
-        const streetSignThreshold = 2;
-        const indicatorThreshold = 4; // Show confidence indicators at high zoom
-
-        buildingLabels.style('display', transform.k > labelThreshold ? 'block' : 'none');
-        reportedLocationIndicators.style('display', transform.k > indicatorThreshold ? 'block' : 'none');
-        playerMarker.style('display', transform.k > detailThreshold ? 'block' : 'none');
-
-        // Show start location marker at all zoom levels when navigation is active
-        startLocationMarker.style('display', navigationState.isNavigating ? 'block' : 'none');
-        startLocationText.style('display', navigationState.isNavigating ? 'block' : 'none');
-
-        // Show/hide street signs and street names based on zoom level
-        streetSigns.style('display', transform.k > streetSignThreshold ? 'block' : 'none');
-        streetNameLabels.style('display', transform.k > streetSignThreshold ? 'block' : 'none');
-
-        // Update text scaling based on zoom level
-        const baseFontSize = tileSize * 0.25;
-        const scaledFontSize = Math.max(2, baseFontSize / Math.sqrt(transform.k));
-        streetNameLabels.attr('font-size', `${scaledFontSize}px`);
-
-        // Update building label scaling
-        const buildingFontSize = Math.max(3, (tileSize * 0.3) / Math.sqrt(transform.k));
-        buildingLabels.attr('font-size', `${buildingFontSize}px`);
-
-        // Optimize stroke rendering at different zoom levels
-        if (transform.k < 1) {
-          tiles.attr('stroke', 'none');
-        } else {
-          tiles.attr('stroke', colors.grid).attr('stroke-width', 0.1); // Thinner white borders
-        }
-
-        // Calculate visible tiles for performance stats
-        const viewportBounds = {
-          left: -transform.x / transform.k,
-          top: -transform.y / transform.k,
-          right: (-transform.x + width) / transform.k,
-          bottom: (-transform.y + height) / transform.k
-        };
-
-        const tilesInView = gridData.filter(d => {
-          const tileX = (d.x - 1) * tileSize;
-          const tileY = (d.y - 1) * tileSize;
-          return tileX >= viewportBounds.left &&
-                 tileX <= viewportBounds.right &&
-                 tileY >= viewportBounds.top &&
-                 tileY <= viewportBounds.bottom;
-        }).length;
-
-        setVisibleTiles(tilesInView);
-      });
-
-    // Store zoom behavior in ref for use by control buttons
-    zoomBehaviorRef.current = zoom;
-    svg.call(zoom);
-
-    // Set initial view based on navigation state
-    if (navigationState.showRouteOnMap && navigationState.currentRoute) {
-      // Show entire route when "Use This Route" is clicked
-      fitRouteToView(svg, zoom, navigationState.currentRoute, width, height, tileSize);
-    } else if (navigationState.isNavigating && navigationState.startLocation) {
-      // Center on start location when "Calculate Route" is clicked
-      centerOnLocation(svg, zoom, navigationState.startLocation, width, height, tileSize);
-    } else {
-      // Default: show entire map when app starts up
-      fitMapToView(svg, zoom, width, height, tileSize);
-    }
-
-    // Add tooltip functionality
-    tiles.on('mouseover', function(event, d: TileData) {
-      // Update hover coordinates if not locked
-      if (!isCoordinatesLocked) {
-        setHoveredCoordinates({ x: d.x, y: d.y });
-      }
+      setHoveredCoordinates({ x: d.x, y: d.y });
 
       d3.select('body').append('div')
         .attr('class', 'tooltip')
@@ -726,33 +546,233 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         .style('left', `${event.pageX + 10}px`)
         .style('top', `${event.pageY - 10}px`);
 
-      // Highlight the hovered tile
-      d3.select(this).attr('stroke', '#fff').attr('stroke-width', 2);
-    })
-    .on('mouseout', function() {
-      // Clear hover coordinates if not locked
-      if (!isCoordinatesLocked) {
-        setHoveredCoordinates(null);
-      }
+      d3.select<Element, TileData>(target).attr('stroke', '#fff').attr('stroke-width', 2);
+    });
 
-      // Remove tooltip
+    g.on('mouseout', (event) => {
+      const target = event.target as Element;
+
+      setHoveredCoordinates(null);
+
       d3.selectAll('.tooltip').remove();
 
-      // Reset stroke to default
-      d3.select(this)
+      d3.select<Element, TileData>(target)
         .attr('stroke', colors.grid)
         .attr('stroke-width', 0.1);
     });
+
+    // Zoom and pan behavior
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 8])
+      .on('zoom', (event) => {
+        const { transform } = event;
+        g.attr('transform', transform.toString());
+
+        // Level-of-detail rendering
+        const labelThreshold = 3;
+        const detailThreshold = 1;
+        const streetSignThreshold = 2;
+        const indicatorThreshold = 4;
+
+        buildingLabels.style('display', transform.k > labelThreshold ? 'block' : 'none');
+        reportedLocationIndicators.style('display', transform.k > indicatorThreshold ? 'block' : 'none');
+        playerMarker.style('display', transform.k > detailThreshold ? 'block' : 'none');
+        streetSigns.style('display', transform.k > streetSignThreshold ? 'block' : 'none');
+        streetNameLabels.style('display', transform.k > streetSignThreshold ? 'block' : 'none');
+
+        // Update text scaling
+        const baseFontSize = tileSize * 0.25;
+        const scaledFontSize = Math.max(2, baseFontSize / Math.sqrt(transform.k));
+        streetNameLabels.attr('font-size', `${scaledFontSize}px`);
+
+        const buildingFontSize = Math.max(3, (tileSize * 0.3) / Math.sqrt(transform.k));
+        buildingLabels.attr('font-size', `${buildingFontSize}px`);
+
+        // Enable tile borders only when zoomed in enough to see them
+        if (transform.k < 1) {
+          tiles.attr('stroke', 'none');
+        } else {
+          tiles.attr('stroke', colors.grid).attr('stroke-width', 0.1);
+        }
+
+        // Calculate visible tiles for performance stats
+        const viewportBounds = {
+          left: -transform.x / transform.k,
+          top: -transform.y / transform.k,
+          right: (-transform.x + width) / transform.k,
+          bottom: (-transform.y + height) / transform.k
+        };
+
+        const tilesInView = gridData.filter(d => {
+          const tileX = (d.x - 1) * tileSize;
+          const tileY = (d.y - 1) * tileSize;
+          return tileX >= viewportBounds.left &&
+                 tileX <= viewportBounds.right &&
+                 tileY >= viewportBounds.top &&
+                 tileY <= viewportBounds.bottom;
+        }).length;
+
+        setVisibleTiles(tilesInView);
+      });
+
+    zoomBehaviorRef.current = zoom;
+    svg.call(zoom);
+
+    // Always start with the full map view when the grid is (re)built
+    fitMapToView(svg, zoom, width, height, tileSize);
 
     const endTime = performance.now();
     setRenderTime(endTime - startTime);
     setVisibleTiles(gridData.length);
 
-    // Cleanup function
     return () => {
       d3.selectAll('.tooltip').remove();
     };
-  }, [playerLocation, createGridData, isCoordinatesLocked, navigationState]);
+  }, [createGridData]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Intentionally excludes isCoordinatesLocked (handled via ref) and
+  // navigationState (handled by the overlay effect below).
+
+  // ─── Navigation overlay effect ───────────────────────────────────────────────
+  // Updates only the route/marker overlay elements without rebuilding the grid.
+  useEffect(() => {
+    const g = gRef.current;
+    if (!g) return;
+
+    // Remove previous overlay elements
+    g.selectAll('.start-location-marker, .start-location-text, .route-line, .route-marker, .route-marker-text').remove();
+
+    // Add start location marker when "Calculate Route" is clicked
+    if (navigationState.isNavigating && navigationState.startLocation) {
+      g.append('circle')
+        .attr('class', 'start-location-marker')
+        .attr('cx', (navigationState.startLocation.x - 1) * tileSize + tileSize / 2)
+        .attr('cy', (navigationState.startLocation.y - 1) * tileSize + tileSize / 2)
+        .attr('r', tileSize * 0.4)
+        .attr('fill', '#00ff00')
+        .attr('stroke', 'white')
+        .attr('stroke-width', 2)
+        .style('opacity', 0.8)
+        .style('pointer-events', 'none');
+
+      g.append('text')
+        .attr('class', 'start-location-text')
+        .attr('x', (navigationState.startLocation.x - 1) * tileSize + tileSize / 2)
+        .attr('y', (navigationState.startLocation.y - 1) * tileSize + tileSize / 2)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('fill', 'black')
+        .attr('font-size', '10px')
+        .attr('font-weight', 'bold')
+        .style('pointer-events', 'none')
+        .text('START');
+    }
+
+    // Add route visualization if navigation is active
+    if (navigationState.showRouteOnMap && navigationState.currentRoute) {
+      const route = navigationState.currentRoute;
+
+      if (route.steps.length > 1) {
+        const lineGenerator = d3.line<RouteStep>()
+          .x((d) => (d.coordinate.x - 1) * tileSize + tileSize / 2)
+          .y((d) => (d.coordinate.y - 1) * tileSize + tileSize / 2)
+          .curve(d3.curveLinear);
+
+        g.append('path')
+          .datum(route.steps)
+          .attr('class', 'route-line')
+          .attr('d', lineGenerator)
+          .attr('stroke', route.usesTransit ? '#00ccff' : '#00ff00')
+          .attr('stroke-width', 3)
+          .attr('fill', 'none')
+          .attr('stroke-dasharray', route.usesTransit ? '5,5' : 'none')
+          .style('opacity', 0.8)
+          .style('pointer-events', 'none');
+
+        route.steps.forEach((step, index) => {
+          if (index === 0) {
+            g.append('circle')
+              .attr('class', 'route-marker start')
+              .attr('cx', (step.coordinate.x - 1) * tileSize + tileSize / 2)
+              .attr('cy', (step.coordinate.y - 1) * tileSize + tileSize / 2)
+              .attr('r', tileSize * 0.3)
+              .attr('fill', '#00ff00')
+              .attr('stroke', 'white')
+              .attr('stroke-width', 2)
+              .style('pointer-events', 'none');
+
+            g.append('text')
+              .attr('class', 'route-marker-text')
+              .attr('x', (step.coordinate.x - 1) * tileSize + tileSize / 2)
+              .attr('y', (step.coordinate.y - 1) * tileSize + tileSize / 2)
+              .attr('text-anchor', 'middle')
+              .attr('dominant-baseline', 'middle')
+              .attr('fill', 'black')
+              .attr('font-size', '8px')
+              .attr('font-weight', 'bold')
+              .style('pointer-events', 'none')
+              .text('S');
+          } else if (index === route.steps.length - 1) {
+            g.append('circle')
+              .attr('class', 'route-marker end')
+              .attr('cx', (step.coordinate.x - 1) * tileSize + tileSize / 2)
+              .attr('cy', (step.coordinate.y - 1) * tileSize + tileSize / 2)
+              .attr('r', tileSize * 0.3)
+              .attr('fill', '#ff0000')
+              .attr('stroke', 'white')
+              .attr('stroke-width', 2)
+              .style('pointer-events', 'none');
+
+            g.append('text')
+              .attr('class', 'route-marker-text')
+              .attr('x', (step.coordinate.x - 1) * tileSize + tileSize / 2)
+              .attr('y', (step.coordinate.y - 1) * tileSize + tileSize / 2)
+              .attr('text-anchor', 'middle')
+              .attr('dominant-baseline', 'middle')
+              .attr('fill', 'white')
+              .attr('font-size', '8px')
+              .attr('font-weight', 'bold')
+              .style('pointer-events', 'none')
+              .text('E');
+          } else if (step.action === 'transit') {
+            g.append('circle')
+              .attr('class', 'route-marker transit')
+              .attr('cx', (step.coordinate.x - 1) * tileSize + tileSize / 2)
+              .attr('cy', (step.coordinate.y - 1) * tileSize + tileSize / 2)
+              .attr('r', tileSize * 0.25)
+              .attr('fill', '#00ccff')
+              .attr('stroke', 'white')
+              .attr('stroke-width', 1)
+              .style('pointer-events', 'none');
+
+            g.append('text')
+              .attr('class', 'route-marker-text')
+              .attr('x', (step.coordinate.x - 1) * tileSize + tileSize / 2)
+              .attr('y', (step.coordinate.y - 1) * tileSize + tileSize / 2)
+              .attr('text-anchor', 'middle')
+              .attr('dominant-baseline', 'middle')
+              .attr('fill', 'black')
+              .attr('font-size', '6px')
+              .attr('font-weight', 'bold')
+              .style('pointer-events', 'none')
+              .text('T');
+          }
+        });
+      }
+    }
+
+    // Zoom to show the route or start location
+    if (svgRef.current && zoomBehaviorRef.current) {
+      const svg = d3.select(svgRef.current);
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      if (navigationState.showRouteOnMap && navigationState.currentRoute) {
+        fitRouteToView(svg, zoomBehaviorRef.current, navigationState.currentRoute, width, height, tileSize);
+      } else if (navigationState.isNavigating && navigationState.startLocation) {
+        centerOnLocation(svg, zoomBehaviorRef.current, navigationState.startLocation, width, height, tileSize);
+      }
+    }
+  }, [navigationState]);
 
 
 
@@ -833,13 +853,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         <div><strong>Performance Stats:</strong></div>
         <div>Render Time: {renderTime.toFixed(1)}ms</div>
         <div>Visible Tiles: {visibleTiles.toLocaleString()}</div>
-        <div>Coordinates: {
-          selectedCoordinates
-            ? `${selectedCoordinates.x}, ${selectedCoordinates.y}${isCoordinatesLocked ? ' (locked)' : ''}`
-            : hoveredCoordinates
-              ? `${hoveredCoordinates.x}, ${hoveredCoordinates.y}`
-              : 'None'
-        }</div>
+        <div>Location: {validPlayerLocation ? `${validPlayerLocation.x}, ${validPlayerLocation.y}` : 'click map to set'}</div>
+        <div>Cursor: {hoveredCoordinates ? `${hoveredCoordinates.x}, ${hoveredCoordinates.y}` : '—'}</div>
       </PerformanceStats>
     </MapContainer>
   );

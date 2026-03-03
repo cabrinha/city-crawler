@@ -9,7 +9,7 @@ const PageContainer = styled.div`
   min-height: 100vh;
   background: #000;
   color: #fff;
-  padding: 20px;
+  padding: 70px 20px 20px;
 `;
 
 const PageTitle = styled.h1`
@@ -19,23 +19,6 @@ const PageTitle = styled.h1`
   font-size: 2.5em;
 `;
 
-const BackToMapButton = styled.button`
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  background: #cc3333;
-  color: #fff;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  z-index: 1000;
-
-  &:hover {
-    background: #aa2222;
-  }
-`;
 
 const LeaderboardsContainer = styled.div`
   display: grid;
@@ -159,11 +142,7 @@ const LoadingState = styled.div`
   padding: 40px 20px;
 `;
 
-interface RankingsPageProps {
-  onBackToMap?: () => void;
-}
-
-export const RankingsPage: React.FC<RankingsPageProps> = ({ onBackToMap }) => {
+export const RankingsPage: React.FC = () => {
   const [topContributors, setTopContributors] = useState<TopContributor[]>([]);
   const [bloodDeities, setBloodDeities] = useState<BloodDeity[]>([]);
   const [richVampires, setRichVampires] = useState<RichVampire[]>([]);
@@ -209,12 +188,6 @@ export const RankingsPage: React.FC<RankingsPageProps> = ({ onBackToMap }) => {
 
   return (
     <PageContainer>
-      {onBackToMap && (
-        <BackToMapButton onClick={onBackToMap}>
-          ← Back to Map
-        </BackToMapButton>
-      )}
-
       <PageTitle>🏆 City Rankings</PageTitle>
 
       <LeaderboardsContainer>
