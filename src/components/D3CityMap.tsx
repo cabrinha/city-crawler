@@ -175,38 +175,58 @@ const tileSize = 12;
 // per pixel, each pixel is FRAME_PX world units. Edit the strings to restyle.
 const FRAME_PX = 8;
 const FRAME_PALETTE: Record<string, string> = {
-  '#': '#000000', 'D': '#5a3b0c', 'G': '#b8860b', 'L': '#e6c15a', 'W': '#fff3b0', 'R': '#7a1020',
+  '#': '#000000', 'S': '#3a2406', 'D': '#6b4513', 'G': '#b8860b', 'L': '#dcb24a', 'W': '#fff3b0', 'R': '#7a1020',
 };
-// Top edge, outer side first. 12 tall × 12 wide, repeats horizontally.
+// '.' = transparent (lets the outer silhouette curl). Top edge, outer side first,
+// 21 tall × 24 wide, repeats horizontally.
 const FRAME_EDGE = [
-  '############',
-  'DDDDDDDDDDDD',
-  'GGGGGGGGGGGG',
-  'GLWLGGGGLWLG',
-  'GGLGGGGGGLGG',
-  'DDDDDDDDDDDD',
-  'GGGLGGGGLGGG',
-  'GGLGLGGLGLGG',
-  'GLGGGLLGGGLG',
-  'GGGGGGGGGGGG',
-  'DDDDDDDDDDDD',
-  '############',
+  '......LWL........LWL....',
+  '.....LGGGL......LGGGL...',
+  '....LGDGDGL....LGDGDGL..',
+  '...DGGDGGDGD..DGGDGGDGD.',
+  'DDDGGGGGGGGGDDGGGGGGGGGD',
+  'GGGGGGGGGGGGGGGGGGGGGGGG',
+  'SDDDDDDDDDDDDDDDDDDDDDDS',
+  'GGGGGGGGGGGGGGGGGGGGGGGG',
+  'GLWLGGGSGGGLWLGGGSGGGLWL',
+  'GGLGGGSSSGGGLGGGSSSGGGLG',
+  'GGGGGSGGGSGGGGGSGGGSGGGG',
+  'GGGGSGGLGGSGGGSGGLGGSGGG',
+  'GGGSGGLWLGGSGSGGLWLGGSGG',
+  'GGGSGGGLGGGSGSGGGLGGGSGG',
+  'GGGGSGGGGGSGGGGSGGGGGSGG',
+  'GGGGGSSSSSGGGGGGSSSSSGGG',
+  'DDDDDDDDDDDDDDDDDDDDDDDD',
+  'GLGWGLGWGLGWGLGWGLGWGLGW',
+  'GSGLGSGLGSGLGSGLGSGLGSGL',
+  'DDDDDDDDDDDDDDDDDDDDDDDD',
+  '########################',
 ];
-// Corner rosette, 12 × 12; outer edges top/left.
+// Corner cartouche, 21 × 21; outer edges top/left, scroll tips poke outward.
 const FRAME_CORNER = [
-  '############',
-  '#DDDDDDDDDDD',
-  '#DGGGGGGGGGG',
-  '#DGLWLGGLGGG',
-  '#DGWRWGLWLGG',
-  '#DGLWLGGLGGG',
-  '#DGGGGLGGGGG',
-  '#DGLGLWLGLGG',
-  '#DGGGGLGGGGG',
-  '#DGGGGGGGGGG',
-  '#DDDDDDDDDDD',
-  '############',
+  'LWL..LWL.............',
+  'WGGLLGGGL...LWL......',
+  'LGDGGDGGGL.LGGGL.....',
+  '.LGGGGGGGGLGDGDGL....',
+  '.LGDGGSSSGGGGDGGGD...',
+  'LGGGGSGGGSGGGGGGGGGGD',
+  'WGGGSGGLGGSDDDDDDDDDD',
+  'LGGGSGLWLGGSGGGGGGGGG',
+  '.LGGSGLWRWLGSGLWLGGSG',
+  '.GGDSGLWRRWLGSGLGGSGG',
+  '.LGDSGGLWRWLGGSGGSGGG',
+  '.GGDSGGGLWLGGGGSSGGGG',
+  'LGGDSGGGGLGGGGGSGGGGG',
+  'WGGGGSGGGGGGGGSGSGGGG',
+  'LGGGGGSSSGGGGSGGGSGGG',
+  '.LGGSGGGGSSSSGGGGGSGG',
+  '.GGGSGGLGGGGGGSSSSSSS',
+  '.LGGSGLWLGGGGGDDDDDDD',
+  'LGGGSGGLGGGGGSGWGLGWG',
+  'WGGGSGGGGGGGGSGLGSGLG',
+  'LGGGSGGGGGGGGSDDDDDDD',
 ];
+
 const FRAME_W = FRAME_EDGE.length * FRAME_PX;
 
 const patternCanvas = (rows: string[]): HTMLCanvasElement => {
@@ -214,6 +234,7 @@ const patternCanvas = (rows: string[]): HTMLCanvasElement => {
   c.width = rows[0].length * FRAME_PX; c.height = rows.length * FRAME_PX;
   const ctx = c.getContext('2d')!;
   rows.forEach((row, y) => [...row].forEach((ch, x) => {
+    if (ch === '.') return;
     ctx.fillStyle = FRAME_PALETTE[ch] ?? '#000';
     ctx.fillRect(x * FRAME_PX, y * FRAME_PX, FRAME_PX, FRAME_PX);
   }));
@@ -271,7 +292,7 @@ const findNearestBuildings = (playerLocation: Coordinate, buildingType: string):
 };
 
 // Helper function to fit the entire map to view
-const fitMapToView = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, zoom: d3.ZoomBehavior<SVGSVGElement, unknown>, width: number, height: number, tileSize: number) => {
+const fitMapToView = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, zoom: d3.ZoomBehavior<SVGSVGElement, unknown>, width: number, height: number, tileSize: number, animate = true) => {
   const mapWidth = CITY_SIZE * tileSize + 2 * FRAME_W;
   const mapHeight = mapWidth;
 
@@ -280,9 +301,9 @@ const fitMapToView = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>
   const centerX = (width - mapWidth * scale) / 2 + FRAME_W * scale;
   const centerY = HEADER + (height - HEADER - mapHeight * scale) / 2 + FRAME_W * scale;
 
-  svg.transition()
-    .duration(1000)
-    .call(zoom.transform, d3.zoomIdentity.translate(centerX, centerY).scale(scale));
+  const t = d3.zoomIdentity.translate(centerX, centerY).scale(scale);
+  if (animate) svg.transition().duration(1000).call(zoom.transform, t);
+  else svg.call(zoom.transform, t);
 };
 
 // Helper function to center on a specific location
@@ -580,7 +601,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       });
     zoomBehaviorRef.current = zoom;
     svg.call(zoom);
-    fitMapToView(svg, zoom, window.innerWidth, window.innerHeight, tileSize);
+    fitMapToView(svg, zoom, window.innerWidth, window.innerHeight, tileSize, false);
 
     return () => {
       window.removeEventListener('resize', resize);
