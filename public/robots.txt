@@ -6,3 +6,5 @@ Sitemap: https://vampires.terrible.engineering/sitemap.xml
 
 # Crawl delay (optional, helps with server load)
 Crawl-delay: 1
+
+# AI-readable summary of this site: https://vampires.terrible.engineering/llms.txt

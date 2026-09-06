@@ -1,0 +1,25 @@
+# Vespertine's City Crawler
+
+> Interactive map and tools for the Vampires! browser game (quiz.ravenblack.net/blood.pl): a zoomable 200×200 city grid with transit stations, pubs, banks, shops and guilds, community-reported shop/guild locations, a shopping cost calculator, and player rankings. Free, no login.
+
+## Pages
+
+- [Map](https://vampires.terrible.engineering/): the city grid. Click a tile to set your location; shows nearest banks, pubs and transit, and computes walking/transit routes.
+- [Locations](https://vampires.terrible.engineering/locations): report shop and guild locations, see recent reports, and countdowns to the next shop (every 12 h at 10:40 / 22:40 UTC) and guild moves (1st, 6th, 10th, 14th, 19th, 23rd, 27th at 00:00 UTC).
+- [Rankings](https://vampires.terrible.engineering/rankings): top reporters, Blood Deities (most blood pints) and Rich Vampires (most coins), community-submitted.
+- [Shopping](https://vampires.terrible.engineering/shopping): item price calculator with charisma and discount-shop modifiers.
+
+## Data and API
+
+Read-only JSON, no key required. Please keep it to a few requests per minute.
+
+- [/api/locations](https://vampires.terrible.engineering/api/locations): current reported shop/guild/hunter/paladin/werewolf/item locations with coordinates, reporter and confidence.
+- [/api/leaderboards/blood-deities](https://vampires.terrible.engineering/api/leaderboards/blood-deities) and [/api/leaderboards/rich-vampires](https://vampires.terrible.engineering/api/leaderboards/rich-vampires).
+- [/api/stats](https://vampires.terrible.engineering/api/stats): report counts.
+- Coordinates: x and y are 1–200. Even/even tiles are intersections named "<street> & <number>"; named streets run north–south (trees and animals in the west, minerals and states of malaise in the east), numbered streets east–west.
+- Shops move twice a day and guilds several times a month, so reported locations are time-sensitive; check the countdowns on /locations.
+
+## Source
+
+- [GitHub: cabrinha/city-crawler](https://github.com/cabrinha/city-crawler): React + TypeScript + Vite frontend, Express + PostgreSQL backend, Discord bot that parses shop reports. Contributions welcome.
+- Not affiliated with the game's author (RavenBlack).
