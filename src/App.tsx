@@ -6,7 +6,7 @@ import { LocationReportsPage } from './components/LocationReportsPage';
 import { RankingsPage } from './components/RankingsPage';
 import { ShoppingCalculatorPage } from './components/ShoppingCalculatorPage';
 import { updateMetaTags } from './main';
-import type { GameState } from './types/game';
+import { getMoveCountdown } from './utils/formatters';
 
 const AppContainer = styled.div`
   width: 100%;
@@ -28,6 +28,12 @@ const Header = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  @media (max-width: 640px) {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
 `;
 
 const Title = styled.h1`
@@ -35,6 +41,13 @@ const Title = styled.h1`
   color: #ff4444;
   font-size: 24px;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+
+  @media (max-width: 640px) {
+    font-size: 16px;
+    white-space: nowrap;
+    flex: 1 1 100%;
+    text-align: center;
+  }
 `;
 
 const GameStats = styled.div`
@@ -42,22 +55,43 @@ const GameStats = styled.div`
   gap: 20px;
   font-size: 14px;
   align-items: center;
+
+  @media (max-width: 640px) {
+    gap: 6px;
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+`;
+
+const CountdownText = styled.span`
+  color: #aaa;
+  font-size: 12px;
+  white-space: nowrap;
+
+  @media (max-width: 640px) {
+    display: none;
+  }
 `;
 
 const NavigationButton = styled.button<{ $active?: boolean }>`
-  background: ${props => props.$active ? '#881111' : '#cc3333'};
-  color: #fff;
-  border: none;
+  background: ${props => props.$active ? '#cc3333' : 'transparent'};
+  color: ${props => props.$active ? '#fff' : '#ff6666'};
+  border: 1px solid #cc3333;
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
   font-weight: bold;
   transition: background 0.3s ease;
-  opacity: ${props => props.$active ? 0.7 : 1};
 
   &:hover {
-    background: ${props => props.$active ? '#881111' : '#aa2222'};
+    background: #cc3333;
+    color: #fff;
+  }
+
+  @media (max-width: 640px) {
+    padding: 6px 8px;
+    font-size: 12px;
   }
 `;
 
@@ -67,6 +101,11 @@ const GitHubLink = styled.a`
   justify-content: center;
   width: 40px;
   height: 40px;
+
+  @media (max-width: 640px) {
+    width: 32px;
+    height: 32px;
+  }
   background-color: rgba(255, 255, 255, 0.1);
   border: 1px solid #666;
   border-radius: 8px;
@@ -90,15 +129,8 @@ const GitHubLink = styled.a`
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [gameState] = useState<GameState>({
-    playerLocation: { x: 0, y: 0 },
-    actionPoints: 8,
-    maxActionPoints: 90,
-    bloodPints: 105449,
-    coins: 1000,
-    rank: 'Blood Deity'
-  });
-  const [playerLocation, setPlayerLocation] = useState(gameState.playerLocation);
+  const [countdown, setCountdown] = useState({ shops: '', guilds: '' });
+  const [playerLocation, setPlayerLocation] = useState({ x: 0, y: 0 });
 
 
 
@@ -113,10 +145,20 @@ function App() {
     updateMetaTags();
   }, []);
 
+  useEffect(() => {
+    const tick = () => setCountdown(getMoveCountdown(new Date()));
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const compact = (s: string) => s.replace(/ \d+s$/, '');
+
   return (
     <AppContainer>
       <Header>
         <Title>Vespertine's City Crawler</Title>
+        <CountdownText>Shops: {compact(countdown.shops)} &middot; Guilds: {compact(countdown.guilds)}</CountdownText>
         <GameStats>
           <NavigationButton onClick={goToMap} $active={currentPath === '/'}>
             Map

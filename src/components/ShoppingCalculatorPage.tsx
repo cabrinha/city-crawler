@@ -135,7 +135,7 @@ const HelpText = styled.div`
 `;
 
 const ItemList = styled.div`
-  max-height: 300px;
+  max-height: calc(100vh - 220px);
   overflow-y: auto;
   border: 1px solid #666;
   border-radius: 4px;
@@ -274,7 +274,7 @@ const SummaryTitle = styled.h3`
 `;
 
 const SummaryList = styled.div`
-  max-height: 300px;
+  max-height: calc(100vh - 220px);
   overflow-y: auto;
   padding-right: 8px;
 

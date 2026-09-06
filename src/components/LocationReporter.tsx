@@ -257,18 +257,6 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
     e.preventDefault();
     clearMessages();
 
-    console.log('🚀 Form submission started (dropdown)', {
-      buildingName,
-      buildingType,
-      streetName,
-      streetNumber,
-      customItemName,
-      reporterName,
-      guildLevel,
-      bloodAmount,
-      coins,
-      notes
-    });
 
     // Handle Blood Deity and Rich Vampire separately
     if (buildingType === 'blood_deity') {
@@ -316,13 +304,11 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
       : buildingName;
 
     if (!effectiveBuildingName || !streetName || !streetNumber) {
-      console.log('❌ Form validation failed - missing required fields');
       setErrorMessage('Please fill in all required fields.');
       return;
     }
 
     if (buildingType === 'item' && !customItemName) {
-      console.log('❌ Form validation failed - missing custom item name');
       setErrorMessage('Please enter a custom item name.');
       return;
     }
@@ -330,7 +316,6 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
     try {
       // Calculate coordinates from street name and number
       const coordinate = parseLocationToCoordinate(streetName, streetNumber);
-      console.log('📍 Calculated coordinates:', coordinate);
 
       const report: LocationReport = {
         buildingName: effectiveBuildingName,
@@ -346,9 +331,7 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
         coins
       };
 
-      console.log('📤 Sending API request with data:', report);
       const reportedLocation = await ApiService.createLocation(report);
-      console.log('✅ API request successful:', reportedLocation);
 
       setSuccessMessage(`Successfully reported ${effectiveBuildingName} at ${streetName} & ${streetNumber}!`);
       resetForm();
@@ -357,7 +340,6 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
             const tokenRes = await fetch("https://lollis-home.ddns.net/api/wsgi/request-token.py");
             const token = await tokenRes.text();
             await fetch(`https://lollis-home.ddns.net/api/wsgi/trigger-update.py?token=${token}`);
-            console.log("✅ Bot update triggered.");
         } catch (e) {
             console.warn("⚠️ Failed to trigger bot update:", e);
         }
@@ -380,14 +362,8 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
     e.preventDefault();
     clearMessages();
 
-    console.log('🚀 Form submission started (natural language)', {
-      naturalLanguageInput,
-      reporterName,
-      notes
-    });
 
     if (!naturalLanguageInput.trim()) {
-      console.log('❌ Form validation failed - empty natural language input');
       setErrorMessage('Please enter a location description.');
       return;
     }
@@ -399,14 +375,12 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
         .map(line => line.trim())
         .filter(line => line.length > 0);
 
-      console.log(`🔍 Processing ${locationLines.length} location(s)`);
 
       // Parse comma-separated reporter names
       const reporterNames = reporterName
         ? reporterName.split(',').map(name => name.trim()).filter(name => name.length > 0)
         : [];
 
-      console.log('👥 Reporter names:', reporterNames);
 
       const results: { success: number; failed: number; details: string[] } = {
         success: 0,
@@ -416,13 +390,11 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
 
       // Process each location
       for (const [index, locationLine] of locationLines.entries()) {
-        console.log(`🔍 Processing location ${index + 1}/${locationLines.length}: ${locationLine}`);
 
         try {
           const parsedReport = parseNaturalLanguageLocation(locationLine);
 
           if (!parsedReport) {
-            console.log(`❌ Natural language parsing failed for: ${locationLine}`);
             results.failed++;
             results.details.push(`❌ Could not parse: "${locationLine}"`);
             continue;
@@ -433,7 +405,6 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
             ? reporterNames[index % reporterNames.length]
             : undefined;
 
-          console.log(`📝 Using reporter name: ${currentReporterName || 'anonymous'}`);
 
           const report: LocationReport = {
             ...parsedReport,
@@ -444,9 +415,7 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
             coins
           };
 
-          console.log(`📤 Sending API request for: ${parsedReport.buildingName}`, report);
           const reportedLocation = await ApiService.createLocation(report);
-          console.log(`✅ Successfully reported: ${parsedReport.buildingName}`);
 
           results.success++;
           results.details.push(`✅ ${parsedReport.buildingName} at ${parsedReport.streetName} & ${parsedReport.streetNumber} (by ${currentReporterName || 'anonymous'})`);
@@ -471,10 +440,8 @@ export const LocationReporter: React.FC<LocationReporterProps> = ({ onLocationRe
       } else if (results.success > 0 && results.failed > 0) {
         setSuccessMessage(`Reported ${results.success} location${results.success > 1 ? 's' : ''}, ${results.failed} failed.`);
         setErrorMessage(`Some locations failed to parse. Check details in console.`);
-        console.log('📊 Batch processing results:', results);
       } else {
         setErrorMessage(`Failed to report any locations. Check the format and try again.`);
-        console.log('📊 Detailed failure reasons:', results.details);
       }
 
     } catch (error) {
