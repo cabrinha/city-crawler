@@ -1,31 +1,18 @@
-# Build and serve stage
-FROM node:20-alpine
-
+# Stage 1: build
+FROM node:20-alpine AS build
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
-
-# Install all dependencies (including dev dependencies for building)
 RUN npm ci
-
-# Copy source code
 COPY src/ ./src/
 COPY public/ ./public/
-COPY index.html ./
-COPY tsconfig*.json ./
-COPY vite.config.ts ./
-
+COPY index.html tsconfig*.json vite.config.ts ./
 ENV VITE_API_URL=https://vampires.terrible.engineering
-
-# Build the React app
 RUN npm run build
 
-# Install serve package globally for serving static files
-RUN npm install -g serve
-
-# Expose port 3000
+# Stage 2: static server only; no project dependencies in the final image
+FROM node:20-alpine
+RUN npm install -g serve && npm cache clean --force
+COPY --from=build /app/dist /app/dist
+USER node
 EXPOSE 3000
-
-# Serve the built React app
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["serve", "-s", "/app/dist", "-l", "3000"]
