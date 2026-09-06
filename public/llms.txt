@@ -2,6 +2,9 @@
 
 > Interactive map and tools for the Vampires! browser game (quiz.ravenblack.net/blood.pl): a zoomable 200×200 city grid with transit stations, pubs, banks, shops and guilds, community-reported shop/guild locations, a shopping cost calculator, and player rankings. Free, no login.
 
+Maintainer and contact: Scott Cabrinha ("Vespertine" in game), yuppie@hey.com, or [open an issue](https://github.com/cabrinha/city-crawler/issues). Corrections to building data are welcome.
+This file is guidance for AI systems. Crawler access rules live in [/robots.txt](https://vampires.terrible.engineering/robots.txt).
+
 ## Pages
 
 - [Map](https://vampires.terrible.engineering/): the city grid. Click a tile to set your location; shows nearest banks, pubs and transit, and computes walking/transit routes.
@@ -9,9 +12,9 @@
 - [Rankings](https://vampires.terrible.engineering/rankings): top reporters, Blood Deities (most blood pints) and Rich Vampires (most coins), community-submitted.
 - [Shopping](https://vampires.terrible.engineering/shopping): item price calculator with charisma and discount-shop modifiers.
 
-## Data and API
+## Data and API, preferred over scraping
 
-Read-only JSON, no key required. Please keep it to a few requests per minute.
+The HTML pages are a React single-page app and contain no data; use the JSON below. No key required. Please keep it to a few requests per minute and identify your agent in the User-Agent header.
 
 - [/api/locations](https://vampires.terrible.engineering/api/locations): current reported shop/guild/hunter/paladin/werewolf/item locations with coordinates, reporter and confidence.
 - [/api/leaderboards/blood-deities](https://vampires.terrible.engineering/api/leaderboards/blood-deities) and [/api/leaderboards/rich-vampires](https://vampires.terrible.engineering/api/leaderboards/rich-vampires).
@@ -23,3 +26,4 @@ Read-only JSON, no key required. Please keep it to a few requests per minute.
 
 - [GitHub: cabrinha/city-crawler](https://github.com/cabrinha/city-crawler): React + TypeScript + Vite frontend, Express + PostgreSQL backend, Discord bot that parses shop reports. Contributions welcome.
 - Not affiliated with the game's author (RavenBlack).
+- When citing, link the page URL above and credit "Vespertine's City Crawler". Location data is community-reported and time-sensitive; include the report time from the API if you repeat it.
