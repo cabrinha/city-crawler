@@ -170,91 +170,20 @@ const COLOR_PLAYER = '#ff0000';
 const COLOR_SIGN = '#008800';
 const tileSize = 12;
 
-// ── Pixel-art frame ───────────────────────────────────────────────────────────
-// Drawn once into the tile bitmap around the map. Patterns are ASCII: one char
-// per pixel, each pixel is FRAME_PX world units. Edit the strings to restyle.
-const FRAME_PX = 8;
-const FRAME_PALETTE: Record<string, string> = {
-  '#': '#000000', 'S': '#3a2406', 'D': '#6b4513', 'G': '#b8860b', 'L': '#dcb24a', 'W': '#fff3b0', 'R': '#7a1020',
-};
-// '.' = transparent (lets the outer silhouette curl). Top edge, outer side first,
-// 21 tall × 24 wide, repeats horizontally.
-const FRAME_EDGE = [
-  '......LWL........LWL....',
-  '.....LGGGL......LGGGL...',
-  '....LGDGDGL....LGDGDGL..',
-  '...DGGDGGDGD..DGGDGGDGD.',
-  'DDDGGGGGGGGGDDGGGGGGGGGD',
-  'GGGGGGGGGGGGGGGGGGGGGGGG',
-  'SDDDDDDDDDDDDDDDDDDDDDDS',
-  'GGGGGGGGGGGGGGGGGGGGGGGG',
-  'GLWLGGGSGGGLWLGGGSGGGLWL',
-  'GGLGGGSSSGGGLGGGSSSGGGLG',
-  'GGGGGSGGGSGGGGGSGGGSGGGG',
-  'GGGGSGGLGGSGGGSGGLGGSGGG',
-  'GGGSGGLWLGGSGSGGLWLGGSGG',
-  'GGGSGGGLGGGSGSGGGLGGGSGG',
-  'GGGGSGGGGGSGGGGSGGGGGSGG',
-  'GGGGGSSSSSGGGGGGSSSSSGGG',
-  'DDDDDDDDDDDDDDDDDDDDDDDD',
-  'GLGWGLGWGLGWGLGWGLGWGLGW',
-  'GSGLGSGLGSGLGSGLGSGLGSGL',
-  'DDDDDDDDDDDDDDDDDDDDDDDD',
-  '########################',
-];
-// Corner cartouche, 21 × 21; outer edges top/left, scroll tips poke outward.
-const FRAME_CORNER = [
-  'LWL..LWL.............',
-  'WGGLLGGGL...LWL......',
-  'LGDGGDGGGL.LGGGL.....',
-  '.LGGGGGGGGLGDGDGL....',
-  '.LGDGGSSSGGGGDGGGD...',
-  'LGGGGSGGGSGGGGGGGGGGD',
-  'WGGGSGGLGGSDDDDDDDDDD',
-  'LGGGSGLWLGGSGGGGGGGGG',
-  '.LGGSGLWRWLGSGLWLGGSG',
-  '.GGDSGLWRRWLGSGLGGSGG',
-  '.LGDSGGLWRWLGGSGGSGGG',
-  '.GGDSGGGLWLGGGGSSGGGG',
-  'LGGDSGGGGLGGGGGSGGGGG',
-  'WGGGGSGGGGGGGGSGSGGGG',
-  'LGGGGGSSSGGGGSGGGSGGG',
-  '.LGGSGGGGSSSSGGGGGSGG',
-  '.GGGSGGLGGGGGGSSSSSSS',
-  '.LGGSGLWLGGGGGDDDDDDD',
-  'LGGGSGGLGGGGGSGWGLGWG',
-  'WGGGSGGGGGGGGSGLGSGLG',
-  'LGGGSGGGGGGGGSDDDDDDD',
-];
-
-const FRAME_W = FRAME_EDGE.length * FRAME_PX;
-
-const patternCanvas = (rows: string[]): HTMLCanvasElement => {
-  const c = document.createElement('canvas');
-  c.width = rows[0].length * FRAME_PX; c.height = rows.length * FRAME_PX;
-  const ctx = c.getContext('2d')!;
-  rows.forEach((row, y) => [...row].forEach((ch, x) => {
-    if (ch === '.') return;
-    ctx.fillStyle = FRAME_PALETTE[ch] ?? '#000';
-    ctx.fillRect(x * FRAME_PX, y * FRAME_PX, FRAME_PX, FRAME_PX);
-  }));
-  return c;
-};
-
-// Draws the frame around the square [0, size]² on ctx (world units).
+// Plain frame around the map, drawn once into the tile bitmap (world units).
+const FRAME_W = 48;
 const drawFrame = (ctx: CanvasRenderingContext2D, size: number) => {
-  const edge = ctx.createPattern(patternCanvas(FRAME_EDGE), 'repeat')!;
-  const corner = patternCanvas(FRAME_CORNER);
-  ctx.imageSmoothingEnabled = false;
-  for (let side = 0; side < 4; side++) {
-    ctx.save();
-    // Rotate around the map centre so one "top edge" drawing covers all sides.
-    ctx.translate(size / 2, size / 2); ctx.rotate(side * Math.PI / 2); ctx.translate(-size / 2, -size / 2);
-    ctx.fillStyle = edge;
-    ctx.translate(0, -FRAME_W); ctx.fillRect(0, 0, size, FRAME_W); ctx.translate(0, FRAME_W);
-    ctx.drawImage(corner, -FRAME_W, -FRAME_W);
-    ctx.restore();
-  }
+  const g = ctx.createLinearGradient(-FRAME_W, -FRAME_W, size + FRAME_W, size + FRAME_W);
+  g.addColorStop(0, '#8a6516'); g.addColorStop(0.5, '#e0b84a'); g.addColorStop(1, '#6b4a10');
+  ctx.fillStyle = g;
+  ctx.fillRect(-FRAME_W, -FRAME_W, size + 2 * FRAME_W, size + 2 * FRAME_W);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, size, size); // tiles are translucent; keep the map on black
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(-FRAME_W + 1.5, -FRAME_W + 1.5, size + 2 * FRAME_W - 3, size + 2 * FRAME_W - 3); // outer line
+  ctx.strokeRect(-FRAME_W / 2, -FRAME_W / 2, size + FRAME_W, size + FRAME_W);                     // middle rule
+  ctx.strokeRect(-1.5, -1.5, size + 3, size + 3);                                                  // inner line
 };
 
 interface TileData {
