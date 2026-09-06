@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { getMoveCountdown } from '../utils/formatters';
 import { LocationReporter } from './LocationReporter';
 import { LocationListings } from './LocationListings';
 
@@ -95,91 +96,7 @@ export const LocationReportsPage: React.FC = () => {
   const [countdown, setCountdown] = useState({ shops: '', guilds: '' });
 
   const calculateCountdown = () => {
-    const now = new Date();
-    const currentHour = now.getUTCHours();
-    const currentMinute = now.getUTCMinutes();
-    const currentDay = now.getUTCDate();
-
-    // Calculate next shop expiration (10:40 GMT and 22:40 GMT)
-    let nextShopExpiration: Date;
-
-    if (currentHour < 10 || (currentHour === 10 && currentMinute < 40)) {
-      // Next is today at 10:40
-      nextShopExpiration = new Date(Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate(),
-        10, 40, 0, 0
-      ));
-    } else if (currentHour < 22 || (currentHour === 22 && currentMinute < 40)) {
-      // Next is today at 22:40
-      nextShopExpiration = new Date(Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate(),
-        22, 40, 0, 0
-      ));
-    } else {
-      // Next is tomorrow at 10:40 - add 24 hours to avoid month boundary issues
-      const tomorrowTimestamp = now.getTime() + (24 * 60 * 60 * 1000);
-      const tomorrow = new Date(tomorrowTimestamp);
-      nextShopExpiration = new Date(Date.UTC(
-        tomorrow.getUTCFullYear(),
-        tomorrow.getUTCMonth(),
-        tomorrow.getUTCDate(),
-        10, 40, 0, 0
-      ));
-    }
-
-    // Calculate next guild movement (1st, 6th, 10th, 14th, 19th, 23rd, 27th at 12:00 AM UTC)
-    const guildMovementDates = [1, 6, 10, 14, 19, 23, 27];
-    let nextGuildExpiration: Date;
-
-    // Find the next guild movement date
-    let nextMovementDay = guildMovementDates.find(day => day > currentDay);
-
-    if (nextMovementDay) {
-      // Next movement is this month
-      nextGuildExpiration = new Date(Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        nextMovementDay,
-        0, 0, 0, 0
-      ));
-    } else {
-      // Next movement is first day of next month - use timestamp arithmetic
-      const nextMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
-      nextGuildExpiration = new Date(Date.UTC(
-        nextMonth.getUTCFullYear(),
-        nextMonth.getUTCMonth(),
-        guildMovementDates[0], // 1st of next month
-        0, 0, 0, 0
-      ));
-    }
-
-    // Calculate time differences
-    const shopDiff = nextShopExpiration.getTime() - now.getTime();
-    const guildDiff = nextGuildExpiration.getTime() - now.getTime();
-
-    // Format countdowns
-    const formatTime = (ms: number) => {
-      const totalSeconds = Math.floor(ms / 1000);
-      const hours = Math.floor(totalSeconds / 3600);
-      const minutes = Math.floor((totalSeconds % 3600) / 60);
-      const seconds = totalSeconds % 60;
-
-      if (hours > 24) {
-        const days = Math.floor(hours / 24);
-        const remainingHours = hours % 24;
-        return `${days}d ${remainingHours}h ${minutes}m ${seconds}s`;
-      }
-      return `${hours}h ${minutes}m ${seconds}s`;
-    };
-
-    setCountdown({
-      shops: shopDiff > 0 ? formatTime(shopDiff) : 'Moving now!',
-      guilds: guildDiff > 0 ? formatTime(guildDiff) : 'Moving now!'
-    });
+    setCountdown(getMoveCountdown(new Date()));
   };
 
   useEffect(() => {

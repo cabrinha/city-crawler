@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import * as d3 from 'd3';
 import styled from 'styled-components';
 import type { Coordinate, Building, NavigationState, Route, RouteStep } from '../types/game';
@@ -14,6 +14,14 @@ const MapContainer = styled.div`
   background-color: #000000; /* Match BODY { background-color:#000000; } from game CSS */
   position: relative;
   overflow: hidden;
+
+  canvas, svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+  }
+  canvas { pointer-events: none; }
 `;
 
 const Controls = styled.div`
@@ -24,20 +32,69 @@ const Controls = styled.div`
   display: flex;
   flex-direction: column;
   gap: 10px;
+
+  @media (max-width: 640px) {
+    top: 90px;
+    left: 10px;
+  }
 `;
 
-const NearestBuildingsWidget = styled.div`
+const Panel = styled.div`
   position: absolute;
-  top: 80px;
-  right: 20px;
   z-index: 100;
   background-color: rgba(0, 0, 0, 0.9);
   color: white;
   border-radius: 8px;
   border: 1px solid #666;
+  font-size: 12px;
+`;
+
+const NearestBuildingsWidget = styled(Panel)`
+  top: 80px;
+  right: 20px;
   min-width: 200px;
   max-height: 400px;
   overflow-y: auto;
+
+  @media (max-width: 640px) {
+    top: auto;
+    bottom: 20px;
+    right: 10px;
+    left: 10px;
+    max-height: 40vh;
+  }
+`;
+
+const Hint = styled(Panel)`
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  color: #ccc;
+  white-space: nowrap;
+
+  @media (max-width: 640px) { display: none; }
+`;
+
+const Legend = styled(Panel)`
+  bottom: 20px;
+  left: 20px;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px 14px;
+
+  @media (max-width: 640px) { display: none; }
+`;
+
+const Swatch = styled.span<{ $color: string }>`
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  background: ${p => p.$color};
+  border: 1px solid #888;
+  vertical-align: middle;
 `;
 
 const WidgetHeader = styled.div<{ $isVisible: boolean }>`
@@ -54,7 +111,7 @@ const WidgetHeader = styled.div<{ $isVisible: boolean }>`
 
   h3 {
     margin: 0;
-    fontSize: 14px;
+    font-size: 14px;
   }
 
   &::after {
@@ -73,6 +130,12 @@ const WidgetContent = styled.div<{ $isVisible: boolean }>`
 
 const BuildingList = styled.div`
   margin-bottom: 15px;
+
+  h4 {
+    margin: 0 0 5px 0;
+    font-size: 12px;
+    color: #fff;
+  }
 `;
 
 const BuildingItem = styled.div`
@@ -81,7 +144,6 @@ const BuildingItem = styled.div`
   align-items: center;
   padding: 5px 0;
   border-bottom: 1px solid #444;
-  font-size: 12px;
 
   &:last-child {
     border-bottom: none;
@@ -98,27 +160,30 @@ const Distance = styled.span`
   font-weight: bold;
 `;
 
-
-
-const PerformanceStats = styled.div`
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  z-index: 100;
-  background-color: rgba(0, 0, 0, 0.9);
-  color: white;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #666;
-  font-size: 12px;
-`;
+// Colors match the game's blood.css. One table drives tile fill, map letter and legend.
+const BUILDING_STYLE: Record<string, { color: string; letter: string; label: string }> = {
+  transit:  { color: '#880000', letter: 'T', label: 'Transit' },
+  pub:      { color: '#887700', letter: 'P', label: 'Pub' },
+  shop:     { color: '#004488', letter: 'S', label: 'Shop' },
+  bank:     { color: '#0000ff', letter: 'B', label: 'Bank' },
+  other:    { color: '#660066', letter: 'H', label: 'Hidden' },
+  lair:     { color: '#660022', letter: 'L', label: 'Lair' },
+  guild:    { color: '#4400aa', letter: 'G', label: 'Guild' },
+  hunter:   { color: '#0BDA51', letter: 'H', label: 'Hunter' },
+  paladin:  { color: '#90D5FF', letter: 'P', label: 'Paladin' },
+  werewolf: { color: '#cc9933', letter: 'W', label: 'Werewolf' },
+  item:     { color: '#cccc33', letter: 'I', label: 'Item' },
+};
+const LEGEND_KEYS = ['transit', 'pub', 'shop', 'bank', 'guild', 'other', 'hunter', 'item'];
+const COLOR_PLAYER = '#ff0000';
+const COLOR_SIGN = '#008800';
+const tileSize = 12;
 
 interface TileData {
   x: number;
   y: number;
   building?: Building;
   reportedLocation?: ReportedLocation;
-  isStrategic: boolean;
   isPlayer: boolean;
   tileType: 'street' | 'city' | 'intersect';
   streetName?: string; // For intersections
@@ -201,23 +266,74 @@ const fitRouteToView = (svg: d3.Selection<SVGSVGElement, unknown, null, undefine
     .call(zoom.transform, d3.zoomIdentity.translate(centerX, centerY).scale(scale));
 };
 
+const buildGrid = (reportedLocations: ReportedLocation[]): TileData[] => {
+  const reported = new Map(reportedLocations.map(l => [`${l.coordinate.x},${l.coordinate.y}`, l]));
+  const data: TileData[] = [];
+  // Row-major: index = (y-1)*CITY_SIZE + (x-1)
+  for (let y = 1; y <= CITY_SIZE; y++) {
+    for (let x = 1; x <= CITY_SIZE; x++) {
+      const building = getBuildingAt(x, y);
+      const reportedLocation = reported.get(`${x},${y}`);
+      const distanceScore = getDistanceScore(x, y);
+      const xIsOdd = x % 2 === 1;
+      const yIsOdd = y % 2 === 1;
+      const tileType: TileData['tileType'] = xIsOdd && yIsOdd ? 'city' : xIsOdd || yIsOdd ? 'street' : 'intersect';
+      const streetName = tileType === 'intersect' ? getLocationName(x, y) : undefined;
+
+      let tileColor = tileType === 'city'
+        ? `rgba(0, 255, 0, ${Math.min(distanceScore * 6, 0.6)})`
+        : `rgb(68, ${500 * distanceScore + 68}, 68)`;
+      // Reported locations take precedence over static buildings
+      const styleKey = reportedLocation?.buildingType ?? building?.type;
+      if (styleKey && BUILDING_STYLE[styleKey]) tileColor = BUILDING_STYLE[styleKey].color;
+
+      data.push({ x, y, building, reportedLocation, isPlayer: false, tileType, streetName, tileColor, distanceScore });
+    }
+  }
+  return data;
+};
+
+const tileLetter = (d: TileData): string => {
+  const key = d.reportedLocation?.buildingType ?? d.building?.type;
+  return key ? (BUILDING_STYLE[key]?.letter ?? '?') : '';
+};
+
+const tooltipHtml = (d: TileData): string => `
+  <strong>${d.tileType === 'intersect' && d.streetName ? d.streetName : getLocationName(d.x, d.y)}</strong><br/>
+  ${d.reportedLocation ?
+    `<span style="color: ${d.reportedLocation.buildingType === 'shop' ? '#4488ff' : '#aa44ff'}">
+      ${d.reportedLocation.buildingType === 'guild' && d.reportedLocation.guildLevel
+        ? `${d.reportedLocation.buildingName} ${d.reportedLocation.guildLevel}`
+        : d.reportedLocation.buildingName} (reported ${d.reportedLocation.buildingType})
+    </span><br/>
+    <span style="color: ${d.reportedLocation.confidence === 'confirmed' ? '#00ff00' : '#ffaa00'}">
+      ${d.reportedLocation.confidence === 'confirmed' ? 'Confirmed' : 'Unverified'}
+    </span><br/>
+    <span style="color: #ccc">
+      Reported ${Math.floor((new Date().getTime() - d.reportedLocation.reportedAt.getTime()) / (1000 * 60 * 60))}h ago
+      by ${formatReportersTooltip(d.reportedLocation.allReporters, d.reportedLocation.reporterName)}
+    </span><br/>` :
+    d.building ? `${d.building.name} (${d.building.type})` :
+    d.tileType === 'city' ? 'City Block' :
+    d.tileType === 'intersect' ? 'Street Intersection' : 'Street'}<br/>
+  ${d.distanceScore > 0 ? `<span style="color: #00ff00">Thieving Score: ${(d.distanceScore * 1000).toFixed(1)}%</span>` : ''}
+  ${d.isPlayer ? '<span style="color: #ff0000">You are here!</span>' : ''}
+`;
+
 export const D3CityMap: React.FC<D3CityMapProps> = ({
   playerLocation,
   onPlayerLocationChange
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
-  // Ref to the main g element so the route overlay effect can update it without
-  // triggering a full grid rebuild.
+  // Main g element for the route overlay (SVG stays only for the few overlay nodes).
   const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
-  // Ref so the click callback is always current inside D3 event handlers without
-  // being a useEffect dep.
+  const transformRef = useRef(d3.zoomIdentity);
+  const hoveredRef = useRef<TileData | null>(null);
   const onPlayerLocationChangeRef = useRef(onPlayerLocationChange);
   onPlayerLocationChangeRef.current = onPlayerLocationChange;
 
-  const [renderTime, setRenderTime] = useState(0);
-  const [visibleTiles, setVisibleTiles] = useState(0);
-  const [hoveredCoordinates, setHoveredCoordinates] = useState<Coordinate | null>(null);
   const [isNearestBuildingsVisible, setIsNearestBuildingsVisible] = useState(true);
   const [reportedLocations, setReportedLocations] = useState<ReportedLocation[]>([]);
   const [navigationState, setNavigationState] = useState<NavigationState>({
@@ -227,15 +343,9 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
 
   // Load reported locations on component mount
   useEffect(() => {
-    const loadReportedLocations = async () => {
-      try {
-        const locations = await ApiService.getLocations();
-        setReportedLocations(locations);
-      } catch (error) {
-        console.error('Failed to load reported locations:', error);
-      }
-    };
-    loadReportedLocations();
+    ApiService.getLocations()
+      .then(setReportedLocations)
+      .catch(error => console.error('Failed to load reported locations:', error));
   }, []);
 
   // Only compute nearest buildings once the player has set a real location (x > 0)
@@ -244,393 +354,185 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   const nearestPubs = validPlayerLocation ? findNearestBuildings(validPlayerLocation, 'pub') : [];
   const nearestTransit = validPlayerLocation ? findNearestBuildings(validPlayerLocation, 'transit') : [];
 
-  // Define colors to match the actual game CSS from blood.css
-  const colors = {
-    street: '#444444',        // TD.street { background-color:#444444; }
-    city: '#000000',          // TD.city has black background
-    intersect: '#444444',     // Gray background like streets
-    intersectSign: '#008800', // Green rectangle for street signs
-    citylimit: '#0088ff',     // Bright blue for city limits border
-    transit: '#880000',       // SPAN.transit { background-color:#880000; }
-    pub: '#887700',           // SPAN.pub { background-color:#887700; }
-    shop: '#004488',          // SPAN.shop { background-color:#004488; }
-    bank: '#0000ff',          // SPAN.bank { background-color:#0000ff; }
-    hidden: '#660066',        // Dark purple for hidden buildings
-    lair: '#660022',          // SPAN.lair { background-color:#660022; }
-    guild: '#4400aa',         // Purple for guilds
-    strategic: '#008800',     // Green for strategic locations
-    player: '#ff0000',        // Red for player location
-    grid: '#ffffff',          // White borders
-    text: '#ffffff'           // White text
-  };
+  // Grid data + an offscreen bitmap of all tile fills. Rebuilt only when reports change.
+  const grid = useMemo(() => buildGrid(reportedLocations), [reportedLocations]);
+  const tileBitmap = useMemo(() => {
+    const c = document.createElement('canvas');
+    c.width = c.height = CITY_SIZE * tileSize;
+    const ctx = c.getContext('2d')!;
+    for (const d of grid) {
+      ctx.fillStyle = d.tileColor;
+      ctx.fillRect((d.x - 1) * tileSize, (d.y - 1) * tileSize, tileSize - 0.1, tileSize - 0.1);
+    }
+    return c;
+  }, [grid]);
 
-  // Define tile size for consistent rendering (larger for better visibility)
-  const tileSize = 12;
+  const tileAt = useCallback((x: number, y: number): TileData | undefined =>
+    x >= 1 && x <= CITY_SIZE && y >= 1 && y <= CITY_SIZE ? grid[(y - 1) * CITY_SIZE + (x - 1)] : undefined, [grid]);
 
-  const createGridData = useCallback((): TileData[] => {
-    const data: TileData[] = [];
+  // Draw one frame: bitmap + viewport-only detail (letters, street signs, player, hover).
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    const dpr = window.devicePixelRatio || 1;
+    const t = transformRef.current;
+    const w = canvas.width / dpr, h = canvas.height / dpr;
 
-    for (let x = 1; x <= CITY_SIZE; x++) {
-      for (let y = 1; y <= CITY_SIZE; y++) {
-        const building = getBuildingAt(x, y);
-        const reportedLocation = reportedLocations.find(loc =>
-          loc.coordinate.x === x && loc.coordinate.y === y
-        );
-        const distanceScore = getDistanceScore(x, y);
-        const isPlayer = playerLocation ? (playerLocation.x === x && playerLocation.y === y) : false;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.setTransform(dpr * t.k, 0, 0, dpr * t.k, dpr * t.x, dpr * t.y);
+    ctx.imageSmoothingEnabled = t.k < 1;
+    ctx.drawImage(tileBitmap, 0, 0);
 
-        // Determine tile type based on coordinate pattern
-        let tileType: 'street' | 'city' | 'intersect';
-        let streetName: string | undefined;
+    // Visible tile range
+    const x0 = Math.max(1, Math.floor(-t.x / t.k / tileSize) + 1);
+    const y0 = Math.max(1, Math.floor(-t.y / t.k / tileSize) + 1);
+    const x1 = Math.min(CITY_SIZE, Math.ceil((w - t.x) / t.k / tileSize) + 1);
+    const y1 = Math.min(CITY_SIZE, Math.ceil((h - t.y) / t.k / tileSize) + 1);
 
-        const xIsOdd = x % 2 === 1;
-        const yIsOdd = y % 2 === 1;
-
-        if (xIsOdd && yIsOdd) {
-          // City block - both coordinates are odd (1,1), (1,3), (3,1), etc.
-          tileType = 'city';
-        } else if (xIsOdd || yIsOdd) {
-          // Street - one coordinate is odd, one is even
-          tileType = 'street';
-        } else {
-          // Intersection - both coordinates are even (2,2), (4,4), etc.
-          tileType = 'intersect';
-          streetName = getLocationName(x, y);
-        }
-
-        // Create a hashmap of tile colors based on distance score
-        // rgba value for grey streets and intersects is 44, 44, 44
-        let tileColor = {
-          city: `rgba(0, 255, 0, ${Math.min(distanceScore * 6, 0.6)})`,
-          intersect: `rgb(68, ${500 * distanceScore + 68}, 68)`,
-          street: `rgb(68, ${500 * distanceScore + 68}, 68)`
-        }[tileType];
-
-        // Add building colors on top of base tile color
-        if (isPlayer) {
-          tileColor = colors.player;
-        } else if (reportedLocation) {
-          // Reported locations take precedence over static buildings
-          switch (reportedLocation.buildingType) {
-            case 'shop': tileColor = colors.shop; break;
-            case 'guild': tileColor = colors.guild; break;
-            case 'hunter': tileColor = '#0BDA51'; break;  // Bright Green for hunters
-            case 'paladin': tileColor = '#90D5FF'; break; // Light blue for paladins
-            case 'werewolf': tileColor = '#cc9933'; break; // Orange for werewolves
-            case 'item': tileColor = '#cccc33'; break;     // Gold for items
-            default: tileColor = colors.shop; break;
+    const showSigns = t.k > 2, showLetters = t.k > 3, showIndicators = t.k > 4;
+    if (showSigns || showLetters) {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const signFont = `bold ${Math.max(2, (tileSize * 0.25) / Math.sqrt(t.k))}px Verdana, Arial, sans-serif`;
+      const letterFont = `bold ${Math.max(3, (tileSize * 0.3) / Math.sqrt(t.k))}px sans-serif`;
+      for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+          const d = grid[(y - 1) * CITY_SIZE + (x - 1)];
+          const px = (x - 1) * tileSize, py = (y - 1) * tileSize;
+          if (showSigns && d.streetName) {
+            ctx.fillStyle = COLOR_SIGN;
+            ctx.fillRect(px + tileSize * 0.1, py + tileSize * 0.1, tileSize * 0.8, tileSize * 0.3);
+            ctx.fillStyle = '#fff';
+            ctx.font = signFont;
+            ctx.fillText(d.streetName, px + tileSize / 2, py + tileSize * 0.25);
           }
-        } else if (building) {
-          // Buildings use their specific colors from the game CSS
-          switch (building.type) {
-            case 'transit': tileColor = colors.transit; break;  // #880000
-            case 'pub': tileColor = colors.pub; break;          // #887700
-            case 'shop': tileColor = colors.shop; break;        // #004488
-            case 'bank': tileColor = colors.bank; break;        // #0000ff
-            case 'other': tileColor = colors.hidden; break;     // #660066
-            case 'lair': tileColor = colors.lair; break;        // #660022
-            case 'guild': tileColor = colors.guild; break;      // #4400aa
-            default: break; // Keep base tile color
+          if (showLetters) {
+            const letter = tileLetter(d);
+            if (letter) {
+              ctx.fillStyle = '#fff';
+              ctx.font = letterFont;
+              ctx.fillText(letter, px + tileSize / 2, py + tileSize / 2);
+            }
+          }
+          if (showIndicators && d.reportedLocation) {
+            ctx.beginPath();
+            ctx.arc(px + tileSize * 0.8, py + tileSize * 0.2, tileSize * 0.15, 0, Math.PI * 2);
+            ctx.fillStyle = d.reportedLocation.confidence === 'confirmed' ? '#00ff00' : '#ffaa00';
+            ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.5; ctx.stroke();
           }
         }
-
-        data.push({
-          x,
-          y,
-          building,
-          reportedLocation,
-          isStrategic: distanceScore > 0,
-          isPlayer,
-          tileType,
-          streetName,
-          tileColor,
-          distanceScore
-        });
       }
     }
 
-    return data;
-  }, [playerLocation, reportedLocations]);
+    if (t.k >= 1) {
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.1;
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        ctx.strokeRect((x - 1) * tileSize, (y - 1) * tileSize, tileSize - 0.1, tileSize - 0.1);
+      }
+    }
 
-  // ─── Main grid effect ────────────────────────────────────────────────────────
-  // Only re-runs when tile data changes (player location or reported locations).
-  // Navigation state and coordinate lock are intentionally excluded — they are
-  // handled via refs and a separate overlay effect below.
+    if (playerLocation && playerLocation.x > 0) {
+      const px = (playerLocation.x - 1) * tileSize, py = (playerLocation.y - 1) * tileSize;
+      ctx.fillStyle = COLOR_PLAYER;
+      ctx.fillRect(px, py, tileSize - 0.1, tileSize - 0.1);
+      if (t.k > 1) {
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('★', px + tileSize / 2, py + tileSize / 2);
+      }
+    }
+
+    const hov = hoveredRef.current;
+    if (hov) {
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 / t.k;
+      ctx.strokeRect((hov.x - 1) * tileSize, (hov.y - 1) * tileSize, tileSize, tileSize);
+    }
+  }, [grid, tileBitmap, playerLocation]);
+
+  // Keep the latest draw in a ref so d3 handlers never go stale.
+  const drawRef = useRef(draw);
+  drawRef.current = draw;
+
+  // ─── Canvas/zoom setup (once) ───────────────────────────────────────────────
   useEffect(() => {
-    if (!svgRef.current) return;
+    const svgEl = svgRef.current, canvas = canvasRef.current;
+    if (!svgEl || !canvas) return;
+    const svg = d3.select(svgEl);
+    gRef.current = svg.append('g').attr('class', 'map-group');
 
-    const startTime = performance.now();
+    const resize = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const w = window.innerWidth, h = window.innerHeight;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
+      svg.attr('width', w).attr('height', h);
+      drawRef.current();
+    };
+    resize();
+    window.addEventListener('resize', resize);
 
-    const svg = d3.select(svgRef.current);
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const pointerTile = (event: MouseEvent): TileData | undefined => {
+      const [mx, my] = d3.pointer(event, svgEl);
+      const [wx, wy] = transformRef.current.invert([mx, my]);
+      return tileAt(Math.floor(wx / tileSize) + 1, Math.floor(wy / tileSize) + 1);
+    };
 
-    svg.attr('width', width).attr('height', height);
+    const tooltip = d3.select('body').append('div')
+      .attr('class', 'tooltip')
+      .style('position', 'absolute').style('display', 'none')
+      .style('background', 'rgba(0,0,0,0.9)').style('color', 'white')
+      .style('padding', '8px').style('border-radius', '4px').style('font-size', '12px')
+      .style('pointer-events', 'none').style('z-index', '1000');
 
-    // Clear previous content
-    svg.selectAll('*').remove();
-
-    // Create main group for zooming/panning
-    const g = svg.append('g').attr('class', 'map-group');
-    gRef.current = g;
-
-    // Create grid data
-    const gridData = createGridData();
-
-    // Create tiles using event delegation on the parent group so we attach
-    // 3 listeners total instead of 3 × 40,000.
-    const tiles = g.selectAll('.tile')
-      .data(gridData)
-      .enter()
-      .append('rect')
-      .attr('class', 'tile')
-      .attr('x', (d: TileData) => (d.x - 1) * tileSize)
-      .attr('y', (d: TileData) => (d.y - 1) * tileSize)
-      .attr('width', tileSize - 0.1)
-      .attr('height', tileSize - 0.1)
-      .attr('fill', (d: TileData) => d.tileColor)
-      .attr('stroke', 'none')  // Start with no stroke; zoom handler enables it
-      .attr('stroke-width', 0.1)
-      .style('cursor', 'pointer');
-
-    // Single delegated click handler on the group
-    g.on('click', (event) => {
-      const target = event.target as Element;
-      const d = d3.select<Element, TileData>(target).datum();
-      if (!d || !d.x) return;
-
-      onPlayerLocationChangeRef.current?.({ x: d.x, y: d.y });
-    });
-
-    // Add building labels (only visible at higher zoom levels)
-    const buildingLabels = g.selectAll('.building-label')
-      .data(gridData.filter(d => d.building || d.reportedLocation))
-      .enter()
-      .append('text')
-      .attr('class', 'building-label')
-      .attr('x', (d: TileData) => (d.x - 1) * tileSize + tileSize / 2)
-      .attr('y', (d: TileData) => (d.y - 1) * tileSize + tileSize / 2)
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'middle')
-      .attr('fill', 'white')
-      .attr('font-size', '8px')
-      .attr('font-weight', 'bold')
-      .style('display', 'none') // Hidden by default
-      .style('pointer-events', 'none')
-      .text((d: TileData) => {
-        // Reported locations take precedence
-        if (d.reportedLocation) {
-          switch (d.reportedLocation.buildingType) {
-            case 'shop': return 'S';
-            case 'guild': return 'G';
-            case 'hunter': return 'H';
-            case 'paladin': return 'P';
-            case 'werewolf': return 'W';
-            case 'item': return 'I';
-            default: return '?';
-          }
+    svg.on('mousemove', (event: MouseEvent) => {
+      const d = pointerTile(event);
+      if (d !== hoveredRef.current) {
+        hoveredRef.current = d ?? null;
+        if (d) {
+          const isPlayer = !!playerLocation && playerLocation.x === d.x && playerLocation.y === d.y;
+          tooltip.style('display', 'block').html(tooltipHtml({ ...d, isPlayer }));
+        } else {
+          tooltip.style('display', 'none');
         }
-        if (!d.building) return '';
-        switch (d.building.type) {
-          case 'transit': return 'T';
-          case 'pub': return 'P';
-          case 'shop': return 'S';
-          case 'bank': return 'B';
-          case 'other': return 'H';
-          case 'lair': return 'L';
-          case 'guild': return 'G';
-          default: return '';
-        }
-      });
-
-    // Add reported location confidence indicators
-    const reportedLocationIndicators = g.selectAll('.reported-indicator')
-      .data(gridData.filter(d => d.reportedLocation))
-      .enter()
-      .append('circle')
-      .attr('class', 'reported-indicator')
-      .attr('cx', (d: TileData) => (d.x - 1) * tileSize + tileSize * 0.8)
-      .attr('cy', (d: TileData) => (d.y - 1) * tileSize + tileSize * 0.2)
-      .attr('r', tileSize * 0.15)
-      .attr('fill', (d: TileData) =>
-        d.reportedLocation?.confidence === 'confirmed' ? '#00ff00' : '#ffaa00'
-      )
-      .attr('stroke', 'white')
-      .attr('stroke-width', 0.5)
-      .style('display', 'none') // Hidden by default, shown at high zoom
-      .style('pointer-events', 'none');
-
-    // Add player marker (only if player has set a real location)
-    const playerMarker = (playerLocation && playerLocation.x > 0) ? g.append('text')
-      .attr('class', 'player-marker')
-      .attr('x', (playerLocation.x - 1) * tileSize + tileSize / 2)
-      .attr('y', (playerLocation.y - 1) * tileSize + tileSize / 2)
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'middle')
-      .attr('fill', 'white')
-      .attr('font-size', '12px')
-      .attr('font-weight', 'bold')
-      .style('pointer-events', 'none')
-      .text('★') : g.append('g'); // Empty group if no player location
-
-    // Add green street sign rectangles for intersections
-    const streetSigns = g.selectAll('.street-sign')
-      .data(gridData.filter(d => d.tileType === 'intersect' && d.streetName))
-      .enter()
-      .append('rect')
-      .attr('class', 'street-sign')
-      .attr('x', (d: TileData) => (d.x - 1) * tileSize + tileSize * 0.1)
-      .attr('y', (d: TileData) => (d.y - 1) * tileSize + tileSize * 0.1)
-      .attr('width', tileSize * 0.8)
-      .attr('height', tileSize * 0.3)
-      .attr('fill', colors.intersectSign)
-      .attr('stroke', 'none')
-      .style('pointer-events', 'none');
-
-    // Add street name text on the green rectangles
-    const streetNameLabels = g.selectAll('.street-name')
-      .data(gridData.filter(d => d.tileType === 'intersect' && d.streetName))
-      .enter()
-      .append('text')
-      .attr('class', 'street-name')
-      .attr('x', (d: TileData) => (d.x - 1) * tileSize + tileSize / 2)
-      .attr('y', (d: TileData) => (d.y - 1) * tileSize + tileSize * 0.25)
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'middle')
-      .attr('fill', 'white')
-      .attr('font-size', `${tileSize * 0.25}px`)
-      .attr('font-family', 'Verdana, Arial, sans-serif')
-      .attr('font-weight', 'bold')
-      .style('pointer-events', 'none')
-      .text((d: TileData) => d.streetName || '');
-
-    // Tooltip — delegated on group to avoid 80k listeners
-    g.on('mouseover', (event) => {
-      const target = event.target as Element;
-      const d = d3.select<Element, TileData>(target).datum();
-      if (!d || !d.x) return;
-
-      setHoveredCoordinates({ x: d.x, y: d.y });
-
-      d3.select('body').append('div')
-        .attr('class', 'tooltip')
-        .style('position', 'absolute')
-        .style('background', 'rgba(0,0,0,0.9)')
-        .style('color', 'white')
-        .style('padding', '8px')
-        .style('border-radius', '4px')
-        .style('font-size', '12px')
-        .style('pointer-events', 'none')
-        .style('z-index', '1000')
-        .html(`
-          <strong>${d.tileType === 'intersect' && d.streetName ? d.streetName : getLocationName(d.x, d.y)}</strong><br/>
-          ${d.reportedLocation ?
-            `<span style="color: ${d.reportedLocation.buildingType === 'shop' ? '#4488ff' : '#aa44ff'}">
-              ${d.reportedLocation.buildingType === 'guild' && d.reportedLocation.guildLevel
-                ? `${d.reportedLocation.buildingName} ${d.reportedLocation.guildLevel}`
-                : d.reportedLocation.buildingName} (reported ${d.reportedLocation.buildingType})
-            </span><br/>
-            <span style="color: ${d.reportedLocation.confidence === 'confirmed' ? '#00ff00' : '#ffaa00'}">
-              ${d.reportedLocation.confidence === 'confirmed' ? 'Confirmed' : 'Unverified'}
-            </span><br/>
-            <span style="color: #ccc">
-              Reported ${Math.floor((new Date().getTime() - d.reportedLocation.reportedAt.getTime()) / (1000 * 60 * 60))}h ago
-              by ${formatReportersTooltip(d.reportedLocation.allReporters, d.reportedLocation.reporterName)}
-            </span><br/>` :
-            d.building ? `${d.building.name} (${d.building.type})` :
-            d.tileType === 'city' ? 'City Block' :
-            d.tileType === 'intersect' ? 'Street Intersection' : 'Street'}<br/>
-          ${d.distanceScore > 0 ? `<span style="color: #00ff00">Thieving Score: ${(d.distanceScore * 1000).toFixed(1)}%</span>` : ''}
-          ${d.isPlayer ? '<span style="color: #ff0000">You are here!</span>' : ''}
-        `)
-        .style('left', `${event.pageX + 10}px`)
-        .style('top', `${event.pageY - 10}px`);
-
-      d3.select<Element, TileData>(target).attr('stroke', '#fff').attr('stroke-width', 2);
+        drawRef.current();
+      }
+      if (d) tooltip.style('left', `${event.pageX + 10}px`).style('top', `${event.pageY - 10}px`);
+    });
+    svg.on('mouseleave', () => {
+      hoveredRef.current = null;
+      tooltip.style('display', 'none');
+      drawRef.current();
+    });
+    svg.on('click', (event: MouseEvent) => {
+      const d = pointerTile(event);
+      if (d) onPlayerLocationChangeRef.current?.({ x: d.x, y: d.y });
     });
 
-    g.on('mouseout', (event) => {
-      const target = event.target as Element;
-
-      setHoveredCoordinates(null);
-
-      d3.selectAll('.tooltip').remove();
-
-      d3.select<Element, TileData>(target)
-        .attr('stroke', colors.grid)
-        .attr('stroke-width', 0.1);
-    });
-
-    // Zoom and pan behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.1, 8])
       .on('zoom', (event) => {
-        const { transform } = event;
-        g.attr('transform', transform.toString());
-
-        // Level-of-detail rendering
-        const labelThreshold = 3;
-        const detailThreshold = 1;
-        const streetSignThreshold = 2;
-        const indicatorThreshold = 4;
-
-        buildingLabels.style('display', transform.k > labelThreshold ? 'block' : 'none');
-        reportedLocationIndicators.style('display', transform.k > indicatorThreshold ? 'block' : 'none');
-        playerMarker.style('display', transform.k > detailThreshold ? 'block' : 'none');
-        streetSigns.style('display', transform.k > streetSignThreshold ? 'block' : 'none');
-        streetNameLabels.style('display', transform.k > streetSignThreshold ? 'block' : 'none');
-
-        // Update text scaling
-        const baseFontSize = tileSize * 0.25;
-        const scaledFontSize = Math.max(2, baseFontSize / Math.sqrt(transform.k));
-        streetNameLabels.attr('font-size', `${scaledFontSize}px`);
-
-        const buildingFontSize = Math.max(3, (tileSize * 0.3) / Math.sqrt(transform.k));
-        buildingLabels.attr('font-size', `${buildingFontSize}px`);
-
-        // Enable tile borders only when zoomed in enough to see them
-        if (transform.k < 1) {
-          tiles.attr('stroke', 'none');
-        } else {
-          tiles.attr('stroke', colors.grid).attr('stroke-width', 0.1);
-        }
-
-        // Calculate visible tiles for performance stats
-        const viewportBounds = {
-          left: -transform.x / transform.k,
-          top: -transform.y / transform.k,
-          right: (-transform.x + width) / transform.k,
-          bottom: (-transform.y + height) / transform.k
-        };
-
-        const tilesInView = gridData.filter(d => {
-          const tileX = (d.x - 1) * tileSize;
-          const tileY = (d.y - 1) * tileSize;
-          return tileX >= viewportBounds.left &&
-                 tileX <= viewportBounds.right &&
-                 tileY >= viewportBounds.top &&
-                 tileY <= viewportBounds.bottom;
-        }).length;
-
-        setVisibleTiles(tilesInView);
+        transformRef.current = event.transform;
+        gRef.current?.attr('transform', event.transform.toString());
+        drawRef.current();
       });
-
     zoomBehaviorRef.current = zoom;
     svg.call(zoom);
-
-    // Always start with the full map view when the grid is (re)built
-    fitMapToView(svg, zoom, width, height, tileSize);
-
-    const endTime = performance.now();
-    setRenderTime(endTime - startTime);
-    setVisibleTiles(gridData.length);
+    fitMapToView(svg, zoom, window.innerWidth, window.innerHeight, tileSize);
 
     return () => {
-      d3.selectAll('.tooltip').remove();
+      window.removeEventListener('resize', resize);
+      tooltip.remove();
+      svg.on('.zoom', null).on('mousemove', null).on('mouseleave', null).on('click', null);
+      svg.selectAll('*').remove();
     };
-  }, [createGridData]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Intentionally excludes isCoordinatesLocked (handled via ref) and
-  // navigationState (handled by the overlay effect below).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tileAt]);
+
+  // Repaint when tiles or player location change (no DOM rebuild).
+  useEffect(() => { draw(); }, [draw]);
 
   // ─── Navigation overlay effect ───────────────────────────────────────────────
   // Updates only the route/marker overlay elements without rebuilding the grid.
@@ -796,9 +698,26 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     }
   };
 
+  const nearestSection = (title: string, color: string, items: (Building & { distance: number })[], name: (b: Building) => string) => (
+    <BuildingList>
+      <h4><Swatch $color={color} />{title}</h4>
+      {items.map((b) => (
+        <BuildingItem key={b.id}>
+          <BuildingName>{name(b)}</BuildingName>
+          <Distance>{b.distance} blocks</Distance>
+        </BuildingItem>
+      ))}
+    </BuildingList>
+  );
+
   return (
     <MapContainer>
-      <svg ref={svgRef} style={{ display: 'block' }} />
+      <canvas ref={canvasRef} />
+      <svg ref={svgRef} style={{ cursor: 'pointer' }} />
+
+      {!validPlayerLocation && (
+        <Hint>Scroll to zoom, drag to pan. Click a tile to set your location.</Hint>
+      )}
 
       <Controls>
         <NavigationPanel
@@ -809,53 +728,29 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         />
       </Controls>
 
-      <NearestBuildingsWidget>
-        <WidgetHeader
-          $isVisible={isNearestBuildingsVisible}
-          onClick={() => setIsNearestBuildingsVisible(!isNearestBuildingsVisible)}
-        >
-          <h3>Nearest Buildings</h3>
-        </WidgetHeader>
-        <WidgetContent $isVisible={isNearestBuildingsVisible}>
-          <BuildingList>
-            <h4 style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#0000ff' }}>Banks</h4>
-            {nearestBanks.map((bank) => (
-              <BuildingItem key={bank.id}>
-                <BuildingName>{getLocationName(bank.coordinate.x, bank.coordinate.y)}</BuildingName>
-                <Distance>{bank.distance} blocks</Distance>
-              </BuildingItem>
-            ))}
-          </BuildingList>
+      {validPlayerLocation && (
+        <NearestBuildingsWidget>
+          <WidgetHeader
+            $isVisible={isNearestBuildingsVisible}
+            onClick={() => setIsNearestBuildingsVisible(!isNearestBuildingsVisible)}
+          >
+            <h3>Nearest Buildings</h3>
+          </WidgetHeader>
+          <WidgetContent $isVisible={isNearestBuildingsVisible}>
+            {nearestSection('Banks', BUILDING_STYLE.bank.color, nearestBanks, b => getLocationName(b.coordinate.x, b.coordinate.y))}
+            {nearestSection('Pubs', BUILDING_STYLE.pub.color, nearestPubs, b => b.name)}
+            {nearestSection('Transit', BUILDING_STYLE.transit.color, nearestTransit, b => b.name)}
+          </WidgetContent>
+        </NearestBuildingsWidget>
+      )}
 
-          <BuildingList>
-            <h4 style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#887700' }}>Pubs</h4>
-            {nearestPubs.map((pub) => (
-              <BuildingItem key={pub.id}>
-                <BuildingName>{pub.name}</BuildingName>
-                <Distance>{pub.distance} blocks</Distance>
-              </BuildingItem>
-            ))}
-          </BuildingList>
-
-          <BuildingList>
-            <h4 style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#880000' }}>Transit</h4>
-            {nearestTransit.map((transit) => (
-              <BuildingItem key={transit.id}>
-                <BuildingName>{transit.name}</BuildingName>
-                <Distance>{transit.distance} blocks</Distance>
-              </BuildingItem>
-            ))}
-          </BuildingList>
-        </WidgetContent>
-      </NearestBuildingsWidget>
-
-      <PerformanceStats>
-        <div><strong>Performance Stats:</strong></div>
-        <div>Render Time: {renderTime.toFixed(1)}ms</div>
-        <div>Visible Tiles: {visibleTiles.toLocaleString()}</div>
-        <div>Location: {validPlayerLocation ? `${validPlayerLocation.x}, ${validPlayerLocation.y}` : 'click map to set'}</div>
-        <div>Cursor: {hoveredCoordinates ? `${hoveredCoordinates.x}, ${hoveredCoordinates.y}` : '—'}</div>
-      </PerformanceStats>
+      <Legend>
+        {LEGEND_KEYS.map(k => (
+          <span key={k}><Swatch $color={BUILDING_STYLE[k].color} />{BUILDING_STYLE[k].label}</span>
+        ))}
+        <span><Swatch $color={COLOR_PLAYER} />You</span>
+        <span><Swatch $color="rgba(0,255,0,0.5)" />Thieving</span>
+      </Legend>
     </MapContainer>
   );
 };
