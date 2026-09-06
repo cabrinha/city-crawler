@@ -72,20 +72,12 @@ const Hint = styled(Panel)`
   padding: 8px 14px;
   color: #ccc;
   white-space: nowrap;
+  animation: hint-fade 1s ease 10s forwards;
+  @keyframes hint-fade { to { opacity: 0; visibility: hidden; } }
 
   @media (max-width: 640px) { display: none; }
 `;
 
-const Legend = styled(Panel)`
-  bottom: 20px;
-  left: 20px;
-  padding: 10px 12px;
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: 4px 14px;
-
-  @media (max-width: 640px) { display: none; }
-`;
 
 const Swatch = styled.span<{ $color: string }>`
   display: inline-block;
@@ -161,23 +153,88 @@ const Distance = styled.span`
 `;
 
 // Colors match the game's blood.css. One table drives tile fill, map letter and legend.
-const BUILDING_STYLE: Record<string, { color: string; letter: string; label: string }> = {
-  transit:  { color: '#880000', letter: 'T', label: 'Transit' },
-  pub:      { color: '#887700', letter: 'P', label: 'Pub' },
-  shop:     { color: '#004488', letter: 'S', label: 'Shop' },
-  bank:     { color: '#0000ff', letter: 'B', label: 'Bank' },
-  other:    { color: '#660066', letter: 'H', label: 'Hidden' },
-  lair:     { color: '#660022', letter: 'L', label: 'Lair' },
-  guild:    { color: '#4400aa', letter: 'G', label: 'Guild' },
-  hunter:   { color: '#0BDA51', letter: 'H', label: 'Hunter' },
-  paladin:  { color: '#90D5FF', letter: 'P', label: 'Paladin' },
-  werewolf: { color: '#cc9933', letter: 'W', label: 'Werewolf' },
-  item:     { color: '#cccc33', letter: 'I', label: 'Item' },
+const BUILDING_STYLE: Record<string, { color: string; letter: string }> = {
+  transit:  { color: '#880000', letter: 'T' },
+  pub:      { color: '#887700', letter: 'P' },
+  shop:     { color: '#004488', letter: 'S' },
+  bank:     { color: '#0000ff', letter: 'B' },
+  other:    { color: '#660066', letter: 'H' },
+  lair:     { color: '#660022', letter: 'L' },
+  guild:    { color: '#4400aa', letter: 'G' },
+  hunter:   { color: '#0BDA51', letter: 'H' },
+  paladin:  { color: '#90D5FF', letter: 'P' },
+  werewolf: { color: '#cc9933', letter: 'W' },
+  item:     { color: '#cccc33', letter: 'I' },
 };
-const LEGEND_KEYS = ['transit', 'pub', 'shop', 'bank', 'guild', 'other', 'hunter', 'item'];
 const COLOR_PLAYER = '#ff0000';
 const COLOR_SIGN = '#008800';
 const tileSize = 12;
+
+// ── Pixel-art frame ───────────────────────────────────────────────────────────
+// Drawn once into the tile bitmap around the map. Patterns are ASCII: one char
+// per pixel, each pixel is FRAME_PX world units. Edit the strings to restyle.
+const FRAME_PX = 8;
+const FRAME_PALETTE: Record<string, string> = {
+  '#': '#000000', 'D': '#5a3b0c', 'G': '#b8860b', 'L': '#e6c15a', 'W': '#fff3b0', 'R': '#7a1020',
+};
+// Top edge, outer side first. 12 tall × 12 wide, repeats horizontally.
+const FRAME_EDGE = [
+  '############',
+  'DDDDDDDDDDDD',
+  'GGGGGGGGGGGG',
+  'GLWLGGGGLWLG',
+  'GGLGGGGGGLGG',
+  'DDDDDDDDDDDD',
+  'GGGLGGGGLGGG',
+  'GGLGLGGLGLGG',
+  'GLGGGLLGGGLG',
+  'GGGGGGGGGGGG',
+  'DDDDDDDDDDDD',
+  '############',
+];
+// Corner rosette, 12 × 12; outer edges top/left.
+const FRAME_CORNER = [
+  '############',
+  '#DDDDDDDDDDD',
+  '#DGGGGGGGGGG',
+  '#DGLWLGGLGGG',
+  '#DGWRWGLWLGG',
+  '#DGLWLGGLGGG',
+  '#DGGGGLGGGGG',
+  '#DGLGLWLGLGG',
+  '#DGGGGLGGGGG',
+  '#DGGGGGGGGGG',
+  '#DDDDDDDDDDD',
+  '############',
+];
+const FRAME_W = FRAME_EDGE.length * FRAME_PX;
+
+const patternCanvas = (rows: string[]): HTMLCanvasElement => {
+  const c = document.createElement('canvas');
+  c.width = rows[0].length * FRAME_PX; c.height = rows.length * FRAME_PX;
+  const ctx = c.getContext('2d')!;
+  rows.forEach((row, y) => [...row].forEach((ch, x) => {
+    ctx.fillStyle = FRAME_PALETTE[ch] ?? '#000';
+    ctx.fillRect(x * FRAME_PX, y * FRAME_PX, FRAME_PX, FRAME_PX);
+  }));
+  return c;
+};
+
+// Draws the frame around the square [0, size]² on ctx (world units).
+const drawFrame = (ctx: CanvasRenderingContext2D, size: number) => {
+  const edge = ctx.createPattern(patternCanvas(FRAME_EDGE), 'repeat')!;
+  const corner = patternCanvas(FRAME_CORNER);
+  ctx.imageSmoothingEnabled = false;
+  for (let side = 0; side < 4; side++) {
+    ctx.save();
+    // Rotate around the map centre so one "top edge" drawing covers all sides.
+    ctx.translate(size / 2, size / 2); ctx.rotate(side * Math.PI / 2); ctx.translate(-size / 2, -size / 2);
+    ctx.fillStyle = edge;
+    ctx.translate(0, -FRAME_W); ctx.fillRect(0, 0, size, FRAME_W); ctx.translate(0, FRAME_W);
+    ctx.drawImage(corner, -FRAME_W, -FRAME_W);
+    ctx.restore();
+  }
+};
 
 interface TileData {
   x: number;
@@ -215,12 +272,13 @@ const findNearestBuildings = (playerLocation: Coordinate, buildingType: string):
 
 // Helper function to fit the entire map to view
 const fitMapToView = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, zoom: d3.ZoomBehavior<SVGSVGElement, unknown>, width: number, height: number, tileSize: number) => {
-  const mapWidth = CITY_SIZE * tileSize;
-  const mapHeight = CITY_SIZE * tileSize;
+  const mapWidth = CITY_SIZE * tileSize + 2 * FRAME_W;
+  const mapHeight = mapWidth;
 
-  const scale = Math.min(width / mapWidth, height / mapHeight) * 0.9; // 90% of available space
-  const centerX = (width - mapWidth * scale) / 2;
-  const centerY = (height - mapHeight * scale) / 2;
+  const HEADER = 60; // fixed header height; keep the frame below it
+  const scale = Math.min(width / mapWidth, (height - HEADER) / mapHeight) * 0.9; // 90% of available space
+  const centerX = (width - mapWidth * scale) / 2 + FRAME_W * scale;
+  const centerY = HEADER + (height - HEADER - mapHeight * scale) / 2 + FRAME_W * scale;
 
   svg.transition()
     .duration(1000)
@@ -358,8 +416,10 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   const grid = useMemo(() => buildGrid(reportedLocations), [reportedLocations]);
   const tileBitmap = useMemo(() => {
     const c = document.createElement('canvas');
-    c.width = c.height = CITY_SIZE * tileSize;
+    c.width = c.height = CITY_SIZE * tileSize + 2 * FRAME_W;
     const ctx = c.getContext('2d')!;
+    ctx.translate(FRAME_W, FRAME_W);
+    drawFrame(ctx, CITY_SIZE * tileSize);
     for (const d of grid) {
       ctx.fillStyle = d.tileColor;
       ctx.fillRect((d.x - 1) * tileSize, (d.y - 1) * tileSize, tileSize - 0.1, tileSize - 0.1);
@@ -383,7 +443,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     ctx.clearRect(0, 0, w, h);
     ctx.setTransform(dpr * t.k, 0, 0, dpr * t.k, dpr * t.x, dpr * t.y);
     ctx.imageSmoothingEnabled = t.k < 1;
-    ctx.drawImage(tileBitmap, 0, 0);
+    ctx.drawImage(tileBitmap, -FRAME_W, -FRAME_W);
 
     // Visible tile range
     const x0 = Math.max(1, Math.floor(-t.x / t.k / tileSize) + 1);
@@ -744,13 +804,6 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         </NearestBuildingsWidget>
       )}
 
-      <Legend>
-        {LEGEND_KEYS.map(k => (
-          <span key={k}><Swatch $color={BUILDING_STYLE[k].color} />{BUILDING_STYLE[k].label}</span>
-        ))}
-        <span><Swatch $color={COLOR_PLAYER} />You</span>
-        <span><Swatch $color="rgba(0,255,0,0.5)" />Thieving</span>
-      </Legend>
     </MapContainer>
   );
 };
