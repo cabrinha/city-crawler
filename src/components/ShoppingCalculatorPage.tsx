@@ -4,11 +4,12 @@ import type { ShopItem } from '../types/game';
 
 const PageContainer = styled.div`
   width: 100%;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
   background-color: #000;
   color: #fff;
   font-family: 'Courier New', monospace;
-  padding: 70px 20px 20px;
+  padding: 20px;
   overflow-y: auto;
 `;
 

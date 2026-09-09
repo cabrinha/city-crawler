@@ -6,10 +6,10 @@ import { formatTimeAgo } from '../utils/formatters';
 import type { TopContributor, BloodDeity, RichVampire } from '../types/game';
 
 const PageContainer = styled.div`
-  min-height: 100vh;
+  flex: 1;
   background: #000;
   color: #fff;
-  padding: 70px 20px 20px;
+  padding: 20px;
 `;
 
 const PageTitle = styled.h1`

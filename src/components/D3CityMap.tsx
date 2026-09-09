@@ -3,14 +3,16 @@ import * as d3 from 'd3';
 import styled from 'styled-components';
 import type { Coordinate, Building, NavigationState, Route, RouteStep } from '../types/game';
 import { CITY_SIZE, getBuildingAt, getLocationName, getDistanceScore, BUILDINGS } from '../data/cityData';
-import { ApiService } from '../services/api';
+import { findOptimalRoute } from '../services/navigation';
+import { displayName } from './LocationsPanel';
 import type { ReportedLocation } from '../types/game';
 import { NavigationPanel } from './NavigationPanel';
 import { formatReportersTooltip } from '../utils/formatters';
 
 const MapContainer = styled.div`
   width: 100%;
-  height: 100vh;
+  height: 100%;
+  min-height: 0;
   background-color: #000000; /* Match BODY { background-color:#000000; } from game CSS */
   position: relative;
   overflow: hidden;
@@ -26,15 +28,14 @@ const MapContainer = styled.div`
 
 const Controls = styled.div`
   position: absolute;
-  top: 80px;
-  left: 20px;
+  top: 16px;
+  left: 16px;
   z-index: 100;
   display: flex;
   flex-direction: column;
   gap: 10px;
 
   @media (max-width: 640px) {
-    top: 90px;
     left: 10px;
   }
 `;
@@ -50,8 +51,8 @@ const Panel = styled.div`
 `;
 
 const NearestBuildingsWidget = styled(Panel)`
-  top: 80px;
-  right: 20px;
+  top: 16px;
+  right: 16px;
   min-width: 200px;
   max-height: 400px;
   overflow-y: auto;
@@ -66,7 +67,7 @@ const NearestBuildingsWidget = styled(Panel)`
 `;
 
 const Hint = styled(Panel)`
-  top: 80px;
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
   padding: 8px 14px;
@@ -78,6 +79,31 @@ const Hint = styled(Panel)`
   @media (max-width: 640px) { display: none; }
 `;
 
+
+const DetailCard = styled(Panel)`
+  top: 16px;
+  right: 16px;
+  width: 260px;
+  padding: 12px 14px;
+  b { display: block; font-size: 14px; margin-bottom: 6px; }
+  .row { display: flex; justify-content: space-between; margin: 3px 0; color: #ccc; }
+  .row span:last-child { color: #00ff00; }
+  .row .warn { color: #ff4444; }
+  .btn {
+    margin-top: 10px; display: block; width: 100%; background: #cc3333; color: #fff; border: 1px solid #ff6666;
+    padding: 7px; font-weight: bold; font-family: inherit; cursor: pointer;
+  }
+  .btn:disabled { background: #333; border-color: #444; color: #888; cursor: default; }
+  .close { position: absolute; top: 6px; right: 10px; color: #888; cursor: pointer; }
+  @media (max-width: 640px) { top: auto; bottom: 16px; left: 10px; right: 10px; width: auto; }
+`;
+const Stale = styled(Panel)`
+  bottom: 16px;
+  left: 16px;
+  padding: 8px 12px;
+  border-color: #c9a227;
+  color: #c9a227;
+`;
 
 const Swatch = styled.span<{ $color: string }>`
   display: inline-block;
@@ -201,6 +227,10 @@ interface TileData {
 interface D3CityMapProps {
   playerLocation?: Coordinate;
   onPlayerLocationChange?: (coord: Coordinate) => void;
+  reportedLocations: ReportedLocation[];
+  selected?: ReportedLocation | null;
+  onSelect: (l: ReportedLocation | null) => void;
+  shopsMoveInMs: number;
 }
 
 // Utility function to calculate Manhattan distance
@@ -225,10 +255,9 @@ const fitMapToView = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>
   const mapWidth = CITY_SIZE * tileSize + 2 * FRAME_W;
   const mapHeight = mapWidth;
 
-  const HEADER = 60; // fixed header height; keep the frame below it
-  const scale = Math.min(width / mapWidth, (height - HEADER) / mapHeight) * 0.9; // 90% of available space
+  const scale = Math.min(width / mapWidth, height / mapHeight) * 0.92;
   const centerX = (width - mapWidth * scale) / 2 + FRAME_W * scale;
-  const centerY = HEADER + (height - HEADER - mapHeight * scale) / 2 + FRAME_W * scale;
+  const centerY = (height - mapHeight * scale) / 2 + FRAME_W * scale;
 
   const t = d3.zoomIdentity.translate(centerX, centerY).scale(scale);
   if (animate) svg.transition().duration(1000).call(zoom.transform, t);
@@ -330,8 +359,13 @@ const tooltipHtml = (d: TileData): string => `
 
 export const D3CityMap: React.FC<D3CityMapProps> = ({
   playerLocation,
-  onPlayerLocationChange
+  onPlayerLocationChange,
+  reportedLocations,
+  selected,
+  onSelect,
+  shopsMoveInMs,
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
@@ -343,18 +377,10 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   onPlayerLocationChangeRef.current = onPlayerLocationChange;
 
   const [isNearestBuildingsVisible, setIsNearestBuildingsVisible] = useState(true);
-  const [reportedLocations, setReportedLocations] = useState<ReportedLocation[]>([]);
   const [navigationState, setNavigationState] = useState<NavigationState>({
     isNavigating: false,
     showRouteOnMap: false
   });
-
-  // Load reported locations on component mount
-  useEffect(() => {
-    ApiService.getLocations()
-      .then(setReportedLocations)
-      .catch(error => console.error('Failed to load reported locations:', error));
-  }, []);
 
   // Only compute nearest buildings once the player has set a real location (x > 0)
   const validPlayerLocation = playerLocation && playerLocation.x > 0 ? playerLocation : null;
@@ -475,7 +501,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
-      const w = window.innerWidth, h = window.innerHeight;
+      const w = containerRef.current?.clientWidth || window.innerWidth;
+      const h = containerRef.current?.clientHeight || window.innerHeight;
       canvas.width = w * dpr; canvas.height = h * dpr;
       canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
       svg.attr('width', w).attr('height', h);
@@ -530,7 +557,7 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
       });
     zoomBehaviorRef.current = zoom;
     svg.call(zoom);
-    fitMapToView(svg, zoom, window.innerWidth, window.innerHeight, tileSize, false);
+    fitMapToView(svg, zoom, canvas.clientWidth, canvas.clientHeight, tileSize, false);
 
     return () => {
       window.removeEventListener('resize', resize);
@@ -675,8 +702,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     // Zoom to show the route or start location
     if (svgRef.current && zoomBehaviorRef.current) {
       const svg = d3.select(svgRef.current);
-      const width = window.innerWidth;
-      const height = window.innerHeight;
+      const width = containerRef.current?.clientWidth || window.innerWidth;
+      const height = containerRef.current?.clientHeight || window.innerHeight;
 
       if (navigationState.showRouteOnMap && navigationState.currentRoute) {
         fitRouteToView(svg, zoomBehaviorRef.current, navigationState.currentRoute, width, height, tileSize);
@@ -687,6 +714,27 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
   }, [navigationState]);
 
 
+
+  // Pan to a location chosen in the panel.
+  useEffect(() => {
+    if (!selected || !svgRef.current || !zoomBehaviorRef.current) return;
+    const svg = d3.select(svgRef.current);
+    const width = containerRef.current?.clientWidth || window.innerWidth;
+    const height = containerRef.current?.clientHeight || window.innerHeight;
+    centerOnLocation(svg, zoomBehaviorRef.current, selected.coordinate, width, height, tileSize);
+  }, [selected]);
+
+  const routeToSelected = () => {
+    if (!selected || !validPlayerLocation) return;
+    const result = findOptimalRoute(validPlayerLocation, selected.coordinate);
+    setNavigationState({
+      startLocation: validPlayerLocation,
+      destination: selected.coordinate,
+      currentRoute: result.recommendedRoute,
+      isNavigating: true,
+      showRouteOnMap: true,
+    });
+  };
 
   const handleNavigationChange = (newState: NavigationState) => {
     setNavigationState(newState);
@@ -702,8 +750,8 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     // Immediately fit the route to view when a route is selected
     if (svgRef.current && zoomBehaviorRef.current) {
       const svg = d3.select(svgRef.current);
-      const width = window.innerWidth;
-      const height = window.innerHeight;
+      const width = containerRef.current?.clientWidth || window.innerWidth;
+      const height = containerRef.current?.clientHeight || window.innerHeight;
       fitRouteToView(svg, zoomBehaviorRef.current, route, width, height, tileSize);
     }
   };
@@ -720,8 +768,13 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
     </BuildingList>
   );
 
+  const selDist = selected && validPlayerLocation
+    ? Math.abs(selected.coordinate.x - validPlayerLocation.x) + Math.abs(selected.coordinate.y - validPlayerLocation.y)
+    : null;
+  const staleMs = 3600_000;
+
   return (
-    <MapContainer>
+    <MapContainer ref={containerRef}>
       <canvas ref={canvasRef} />
       <svg ref={svgRef} style={{ cursor: 'pointer' }} />
 
@@ -738,7 +791,28 @@ export const D3CityMap: React.FC<D3CityMapProps> = ({
         />
       </Controls>
 
-      {validPlayerLocation && (
+      {selected && (
+        <DetailCard>
+          <span className="close" onClick={() => onSelect(null)} aria-label="Close">&times;</span>
+          <b>{displayName(selected)}</b>
+          <div className="row"><span>{getLocationName(selected.coordinate.x, selected.coordinate.y)}</span><span>{selDist !== null ? `${selDist} blocks` : ''}</span></div>
+          <div className="row"><span>Reported</span><span>{Math.max(0, Math.floor((Date.now() - selected.reportedAt.getTime()) / 3600_000))}h ago{selected.reporterName ? ` by ${selected.reporterName}` : ''}</span></div>
+          <div className="row"><span>Confidence</span><span>{selected.confidence ?? 'unverified'}</span></div>
+          {selected.buildingType === 'shop' && (
+            <div className="row"><span>Moves in</span><span className={shopsMoveInMs < staleMs ? 'warn' : ''}>{Math.floor(shopsMoveInMs / 3600_000)}h {Math.floor((shopsMoveInMs % 3600_000) / 60000)}m</span></div>
+          )}
+          <button className="btn" onClick={routeToSelected} disabled={!validPlayerLocation}
+            title={validPlayerLocation ? undefined : 'Click the map to set your location first'}>
+            Route from my location &rarr;
+          </button>
+        </DetailCard>
+      )}
+
+      {shopsMoveInMs < staleMs && (
+        <Stale>&#9888; Shops move in {Math.floor(shopsMoveInMs / 60000)}m &mdash; shop reports reset then</Stale>
+      )}
+
+      {validPlayerLocation && !selected && (
         <NearestBuildingsWidget>
           <WidgetHeader
             $isVisible={isNearestBuildingsVisible}
