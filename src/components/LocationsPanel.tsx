@@ -27,7 +27,7 @@ const Search = styled.div`
     color: #fff;
     padding: 8px;
     font-family: inherit;
-    font-size: 15px;
+    font-size: 13px;
   }
   button {
     background: #cc3333;
@@ -36,7 +36,7 @@ const Search = styled.div`
     padding: 8px 12px;
     font-family: inherit;
     font-weight: 600;
-    font-size: 15px;
+    font-size: 13px;
     cursor: pointer;
     white-space: nowrap;
   }
@@ -46,7 +46,7 @@ const Filters = styled.div`
   gap: 6px;
   padding: 8px 12px;
   border-bottom: 1px solid #333;
-  font-size: 13px;
+  font-size: 11px;
   flex-wrap: wrap;
   span { padding: 3px 8px; border: 1px solid #444; color: #aaa; cursor: pointer; }
   span.on { border-color: #4488ff; color: #fff; }
@@ -65,7 +65,7 @@ const Row = styled.li<{ $color: string; $selected: boolean }>`
   align-items: center;
   padding: 9px 12px;
   border-bottom: 1px solid #1a1a1a;
-  font-size: 15px;
+  font-size: 13px;
   cursor: pointer;
   background: ${p => (p.$selected ? '#161616' : 'transparent')};
   &:hover { background: #141414; }
