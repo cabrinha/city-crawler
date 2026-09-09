@@ -91,7 +91,7 @@ const ContentContainer = styled.div`
 `;
 
 export const LocationReportsPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'report' | 'listings'>('report');
+  const [activeTab, setActiveTab] = useState<'report' | 'listings'>('listings');
   const [refreshKey, setRefreshKey] = useState(0);
   const [countdown, setCountdown] = useState({ shops: '', guilds: '' });
 
@@ -112,7 +112,7 @@ export const LocationReportsPage: React.FC = () => {
   const handleLocationReported = () => {
     // Refresh the listings when a new location is reported
     setRefreshKey(prev => prev + 1);
-    setActiveTab('report'); // Switch to report to show the new report
+    setActiveTab('listings'); // Show the new report in the list
   };
 
   const handleLocationUpdated = () => {
@@ -140,16 +140,16 @@ export const LocationReportsPage: React.FC = () => {
 
       <TabNavigation>
         <TabButton
-          active={activeTab === 'report'}
-          onClick={() => setActiveTab('report')}
-        >
-          Report Location
-        </TabButton>
-        <TabButton
           active={activeTab === 'listings'}
           onClick={() => setActiveTab('listings')}
         >
-          View Reports
+          Current Locations
+        </TabButton>
+        <TabButton
+          active={activeTab === 'report'}
+          onClick={() => setActiveTab('report')}
+        >
+          Report a Location
         </TabButton>
       </TabNavigation>
 
