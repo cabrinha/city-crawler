@@ -1,7 +1,7 @@
 :root {
-  --font-ui: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
-  --font-title: 'UnifrakturMaguntia', 'Old English Text MT', serif;
+  --font-ui: 'Grenze', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --font-title: 'Grenze Gotisch', 'Old English Text MT', serif;
   font-family: var(--font-ui);
   line-height: 1.5;
   font-weight: 400;

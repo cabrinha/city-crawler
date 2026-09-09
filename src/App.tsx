@@ -40,7 +40,7 @@ const Title = styled.h1`
   margin: 0;
   color: #ff4444;
   font-family: var(--font-title);
-  font-weight: 400;
+  font-weight: 700;
   font-size: 34px;
   letter-spacing: 0.01em;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
@@ -74,8 +74,8 @@ const NavigationButton = styled.button<{ $active?: boolean }>`
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
+  font-size: 16px;
+  font-weight: 600;
   transition: background 0.3s ease;
 
   &:hover {
