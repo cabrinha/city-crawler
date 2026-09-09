@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import styled from 'styled-components';
 import { MapPage } from './components/MapPage';
 import { StatusBar } from './components/StatusBar';
+import { AboutPage } from './components/AboutPage';
 import { RankingsPage } from './components/RankingsPage';
 import { ShoppingCalculatorPage } from './components/ShoppingCalculatorPage';
 import { updateMetaTags } from './main';
@@ -145,6 +146,7 @@ function App() {
   }, []);
   const goToRankings = () => navigate('/rankings');
   const goToShopping = () => navigate('/shopping');
+  const goToAbout = () => navigate('/about');
   const goToMap = () => navigate('/');
 
   const currentPath = location.pathname;
@@ -166,6 +168,9 @@ function App() {
           </NavigationButton>
           <NavigationButton onClick={goToShopping} $active={currentPath === '/shopping'}>
             Shopping
+          </NavigationButton>
+          <NavigationButton onClick={goToAbout} $active={currentPath === '/about'}>
+            About
           </NavigationButton>
           <GitHubLink
             href="https://github.com/cabrinha/city-crawler"
@@ -205,6 +210,7 @@ function App() {
           path="/shopping"
           element={<ShoppingCalculatorPage />}
         />
+        <Route path="/about" element={<AboutPage />} />
       </Routes>
     </AppContainer>
   );
