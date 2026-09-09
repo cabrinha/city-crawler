@@ -33,12 +33,13 @@ const Chip = styled.div<{ $urgent: boolean; $color: string; $pct: number }>`
     flex: none;
   }
   .ring::after { content: ''; width: 24px; height: 24px; border-radius: 50%; background: #0c0c0c; }
-  b { font-size: 18px; color: ${p => (p.$urgent ? '#ff4444' : '#fff')}; line-height: 1.1; }
+  b { font-family: var(--font-mono); font-size: 18px; color: ${p => (p.$urgent ? '#ff4444' : '#fff')}; line-height: 1.1; }
   span { display: block; font-size: 10px; color: #888; letter-spacing: 0.06em; text-transform: uppercase; }
 `;
 
 const Meta = styled.div`
   margin-left: auto;
+  font-family: var(--font-mono);
   font-size: 12px;
   color: #888;
   b { color: #00ff00; }

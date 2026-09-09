@@ -70,8 +70,8 @@ const Row = styled.li<{ $color: string; $selected: boolean }>`
   &:hover { background: #141414; }
   i { width: 8px; height: 8px; background: ${p => p.$color}; border: 1px solid #fff4; }
   .n { color: #fff; }
-  .w { color: #888; font-size: 12px; }
-  .d { color: #00ff00; font-size: 12px; text-align: right; }
+  .w { color: #888; font-size: 12px; font-family: var(--font-mono); }
+  .d { color: #00ff00; font-size: 12px; text-align: right; font-family: var(--font-mono); }
   .d small { display: block; color: #888; }
   .x { color: #666; font-size: 11px; margin-left: 6px; }
   .x:hover { color: #ff4444; }

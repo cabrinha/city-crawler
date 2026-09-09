@@ -47,6 +47,7 @@ const Panel = styled.div`
   color: white;
   border-radius: 8px;
   border: 1px solid #666;
+  font-family: var(--font-mono);
   font-size: 12px;
 `;
 
@@ -73,7 +74,7 @@ const Hint = styled(Panel)`
   padding: 8px 14px;
   color: #ccc;
   white-space: nowrap;
-  animation: hint-fade 1s ease 10s forwards;
+  animation: hint-fade 1s ease 5s forwards;
   @keyframes hint-fade { to { opacity: 0; visibility: hidden; } }
 
   @media (max-width: 640px) { display: none; }

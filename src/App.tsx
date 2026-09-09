@@ -17,7 +17,7 @@ const AppContainer = styled.div`
   flex-direction: column;
   background-color: #000;
   color: #fff;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
 `;
 
 const Header = styled.header`
@@ -39,11 +39,14 @@ const Header = styled.header`
 const Title = styled.h1`
   margin: 0;
   color: #ff4444;
-  font-size: 24px;
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: 34px;
+  letter-spacing: 0.01em;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 
   @media (max-width: 640px) {
-    font-size: 16px;
+    font-size: 24px;
     white-space: nowrap;
     flex: 1 1 100%;
     text-align: center;
