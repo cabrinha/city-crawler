@@ -29,11 +29,11 @@ const years = new Date().getUTCFullYear() - founded;
 
 export const AboutPage: React.FC = () => (
   <Page>
-    <h1>About the City Crawler</h1>
+    <h1>The City Crawler</h1>
     <p className="lede">
-      A map and a notebook for <a href="https://quiz.ravenblack.net/blood.pl" target="_blank" rel="noopener">Vampires!</a>,
+      A map and a notebook for <a href="https://quiz.ravenblack.net/blood.pl?biter=Vespertine" target="_blank" rel="noopener">Vampires!</a>,
       RavenBlack&apos;s browser game of stalking humans through a city of a hundred streets by a hundred streets.
-      The game gives you a 5&times;5 window onto that city; this site gives you the whole thing.
+      The game gives you a 3&times;3 window onto that city; this site gives you the whole thing.
     </p>
 
     <h2>What it&apos;s for</h2>
@@ -55,7 +55,7 @@ export const AboutPage: React.FC = () => (
     <h2>The game</h2>
     <p>
       <em>Vampires!</em> (also called <em>The Dark Alleyway</em>) is a free, text-and-tables browser game written and still run by
-      RavenBlack. You are a vampire with a handful of action points that recharge one every half hour; you spend them walking the
+      <a href="https://www.ravenblack.net/me/" target="_blank" rel="noopener">RavenBlack</a>. You are a vampire with a handful of action points that recharge one every half hour; you spend them walking the
       grid, drinking from the humans you find, buying scrolls and potions, and gaining powers. It has no graphics to speak of and
       has not needed any.
     </p>
