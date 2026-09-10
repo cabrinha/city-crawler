@@ -53,49 +53,38 @@ export function formatTimeAgo(date: Date): string {
 /**
  * Pure countdown computation for shop/guild moves (extracted from LocationReportsPage).
  */
+export interface MoveCycle { prev: Date; next: Date }
+
+/** Shops move at 10:40 and 22:40 UTC; guilds at 00:00 UTC on the 1st, 6th, 10th, 14th, 19th, 23rd, 27th. */
+export function getMoveCycle(now = new Date()): { shops: MoveCycle; guilds: MoveCycle } {
+  const dayUTC = (d: Date, dayOffset: number, h: number, m: number) =>
+    new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + dayOffset, h, m, 0, 0));
+  const shopTimes = [dayUTC(now, -1, 22, 40), dayUTC(now, 0, 10, 40), dayUTC(now, 0, 22, 40), dayUTC(now, 1, 10, 40)];
+  const shopNextIdx = shopTimes.findIndex(t => t.getTime() > now.getTime());
+  const shops = { prev: shopTimes[shopNextIdx - 1], next: shopTimes[shopNextIdx] };
+
+  const days = [1, 6, 10, 14, 19, 23, 27];
+  const monthUTC = (monthOffset: number, day: number) =>
+    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + monthOffset, day, 0, 0, 0, 0));
+  const guildTimes = [monthUTC(-1, days[days.length - 1]), ...days.map(d => monthUTC(0, d)), monthUTC(1, days[0])];
+  const guildNextIdx = guildTimes.findIndex(t => t.getTime() > now.getTime());
+  const guilds = { prev: guildTimes[guildNextIdx - 1], next: guildTimes[guildNextIdx] };
+
+  return { shops, guilds };
+}
+
+export function formatDuration(ms: number, withSeconds = true): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const s = withSeconds ? ` ${seconds}s` : '';
+  if (hours >= 24) return `${Math.floor(hours / 24)}d ${hours % 24}h ${minutes}m${s}`;
+  return `${hours}h ${minutes}m${s}`;
+}
+
 export function getMoveCountdown(now = new Date()): { shops: string; guilds: string } {
-  const currentHour = now.getUTCHours();
-  const currentMinute = now.getUTCMinutes();
-  const currentDay = now.getUTCDate();
-
-  let nextShopExpiration: Date;
-  if (currentHour < 10 || (currentHour === 10 && currentMinute < 40)) {
-    nextShopExpiration = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 10, 40, 0, 0));
-  } else if (currentHour < 22 || (currentHour === 22 && currentMinute < 40)) {
-    nextShopExpiration = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 22, 40, 0, 0));
-  } else {
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    nextShopExpiration = new Date(Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), 10, 40, 0, 0));
-  }
-
-  const guildMovementDates = [1, 6, 10, 14, 19, 23, 27];
-  let nextGuildExpiration: Date;
-  const nextMovementDay = guildMovementDates.find(day => day > currentDay);
-  if (nextMovementDay) {
-    nextGuildExpiration = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), nextMovementDay, 0, 0, 0, 0));
-  } else {
-    const nextMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
-    nextGuildExpiration = new Date(Date.UTC(nextMonth.getUTCFullYear(), nextMonth.getUTCMonth(), guildMovementDates[0], 0, 0, 0, 0));
-  }
-
-  const shopDiff = nextShopExpiration.getTime() - now.getTime();
-  const guildDiff = nextGuildExpiration.getTime() - now.getTime();
-
-  const formatTime = (ms: number) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    if (hours > 24) {
-      const days = Math.floor(hours / 24);
-      const remainingHours = hours % 24;
-      return `${days}d ${remainingHours}h ${minutes}m ${seconds}s`;
-    }
-    return `${hours}h ${minutes}m ${seconds}s`;
-  };
-
-  return {
-    shops: shopDiff > 0 ? formatTime(shopDiff) : 'Moving now!',
-    guilds: guildDiff > 0 ? formatTime(guildDiff) : 'Moving now!',
-  };
+  const c = getMoveCycle(now);
+  const fmt = (next: Date) => (next.getTime() > now.getTime() ? formatDuration(next.getTime() - now.getTime()) : 'Moving now!');
+  return { shops: fmt(c.shops.next), guilds: fmt(c.guilds.next) };
 }

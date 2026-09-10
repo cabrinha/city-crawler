@@ -1,26 +1,27 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { D3CityMap } from './components/D3CityMap';
-import { LocationReportsPage } from './components/LocationReportsPage';
+import { MapPage } from './components/MapPage';
+import { StatusBar } from './components/StatusBar';
+import { AboutPage } from './components/AboutPage';
 import { RankingsPage } from './components/RankingsPage';
 import { ShoppingCalculatorPage } from './components/ShoppingCalculatorPage';
 import { updateMetaTags } from './main';
-import { getMoveCountdown } from './utils/formatters';
+import { getMoveCycle } from './utils/formatters';
+import { ApiService } from './services/api';
+import type { ReportedLocation } from './types/game';
 
 const AppContainer = styled.div`
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background-color: #000;
   color: #fff;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-ui);
 `;
 
 const Header = styled.header`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
   z-index: 200;
   background-color: rgba(0, 0, 0, 0.9);
   padding: 10px 20px;
@@ -39,11 +40,14 @@ const Header = styled.header`
 const Title = styled.h1`
   margin: 0;
   color: #ff4444;
-  font-size: 24px;
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: 34px;
+  letter-spacing: 0.01em;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 
   @media (max-width: 640px) {
-    font-size: 16px;
+    font-size: 24px;
     white-space: nowrap;
     flex: 1 1 100%;
     text-align: center;
@@ -63,15 +67,6 @@ const GameStats = styled.div`
   }
 `;
 
-const CountdownText = styled.span`
-  color: #aaa;
-  font-size: 12px;
-  white-space: nowrap;
-
-  @media (max-width: 640px) {
-    display: none;
-  }
-`;
 
 const NavigationButton = styled.button<{ $active?: boolean }>`
   background: ${props => props.$active ? '#cc3333' : 'transparent'};
@@ -81,7 +76,7 @@ const NavigationButton = styled.button<{ $active?: boolean }>`
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: bold;
+  font-weight: 600;
   transition: background 0.3s ease;
 
   &:hover {
@@ -129,14 +124,29 @@ const GitHubLink = styled.a`
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [countdown, setCountdown] = useState({ shops: '', guilds: '' });
   const [playerLocation, setPlayerLocation] = useState({ x: 0, y: 0 });
+  const [locations, setLocations] = useState<ReportedLocation[]>([]);
+  const [shopsMoveInMs, setShopsMoveInMs] = useState(() => getMoveCycle().shops.next.getTime() - Date.now());
 
+  const loadLocations = () =>
+    ApiService.getLocations().then(setLocations).catch(err => console.error('Failed to load locations:', err));
 
-
-  const goToLocations = () => navigate('/locations');
+  // Reload on mount, every 5 minutes, and right after a shop/guild move (reports reset then).
+  useEffect(() => {
+    loadLocations();
+    const id = setInterval(loadLocations, 5 * 60_000);
+    return () => clearInterval(id);
+  }, []);
+  useEffect(() => {
+    const id = setInterval(() => {
+      const ms = getMoveCycle().shops.next.getTime() - Date.now();
+      setShopsMoveInMs(prev => { if (ms > prev) loadLocations(); return ms; });
+    }, 30_000);
+    return () => clearInterval(id);
+  }, []);
   const goToRankings = () => navigate('/rankings');
   const goToShopping = () => navigate('/shopping');
+  const goToAbout = () => navigate('/about');
   const goToMap = () => navigate('/');
 
   const currentPath = location.pathname;
@@ -145,32 +155,22 @@ function App() {
     updateMetaTags();
   }, []);
 
-  useEffect(() => {
-    const tick = () => setCountdown(getMoveCountdown(new Date()));
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const compact = (s: string) => s.replace(/ \d+s$/, '');
-
   return (
     <AppContainer>
       <Header>
         <Title>Vespertine's City Crawler</Title>
-        <CountdownText>Shops: {compact(countdown.shops)} &middot; Guilds: {compact(countdown.guilds)}</CountdownText>
         <GameStats>
           <NavigationButton onClick={goToMap} $active={currentPath === '/'}>
             Map
-          </NavigationButton>
-          <NavigationButton onClick={goToLocations} $active={currentPath === '/locations'}>
-            Locations
           </NavigationButton>
           <NavigationButton onClick={goToRankings} $active={currentPath === '/rankings'}>
             Rankings
           </NavigationButton>
           <NavigationButton onClick={goToShopping} $active={currentPath === '/shopping'}>
             Shopping
+          </NavigationButton>
+          <NavigationButton onClick={goToAbout} $active={currentPath === '/about'}>
+            About
           </NavigationButton>
           <GitHubLink
             href="https://github.com/cabrinha/city-crawler"
@@ -186,20 +186,22 @@ function App() {
         </GameStats>
       </Header>
 
+      <StatusBar locations={locations} />
+
       <Routes>
         <Route
           path="/"
           element={
-            <D3CityMap
+            <MapPage
+              locations={locations}
+              onLocationsChanged={loadLocations}
               playerLocation={playerLocation}
               onPlayerLocationChange={setPlayerLocation}
+              shopsMoveInMs={shopsMoveInMs}
             />
           }
         />
-        <Route
-          path="/locations"
-          element={<LocationReportsPage />}
-        />
+        <Route path="/locations" element={<Navigate to="/" replace />} />
         <Route
           path="/rankings"
           element={<RankingsPage />}
@@ -208,6 +210,7 @@ function App() {
           path="/shopping"
           element={<ShoppingCalculatorPage />}
         />
+        <Route path="/about" element={<AboutPage />} />
       </Routes>
     </AppContainer>
   );

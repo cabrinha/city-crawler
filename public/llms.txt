@@ -8,9 +8,10 @@ This file is guidance for AI systems. Crawler access rules live in [/robots.txt]
 ## Pages
 
 - [Map](https://vampires.terrible.engineering/): the city grid. Click a tile to set your location; shows nearest banks, pubs and transit, and computes walking/transit routes.
-- [Locations](https://vampires.terrible.engineering/locations): report shop and guild locations, see recent reports, and countdowns to the next shop (every 12 h at 10:40 / 22:40 UTC) and guild moves (1st, 6th, 10th, 14th, 19th, 23rd, 27th at 00:00 UTC).
+- Locations panel (on the map): report shop and guild locations, see current reports, and countdowns to the next shop (every 12 h at 10:40 / 22:40 UTC) and guild moves (1st, 6th, 10th, 14th, 19th, 23rd, 27th at 00:00 UTC).
 - [Rankings](https://vampires.terrible.engineering/rankings): top reporters, Blood Deities (most blood pints) and Rich Vampires (most coins), community-submitted.
 - [Shopping](https://vampires.terrible.engineering/shopping): item price calculator with charisma and discount-shop modifiers.
+- [About](https://vampires.terrible.engineering/about): what the site is for, and a short history of the game (running since at least January 2003).
 
 ## Data and API, preferred over scraping
 

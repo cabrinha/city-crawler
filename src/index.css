@@ -1,5 +1,8 @@
 :root {
-  font-family: Verdana, Geneva, sans-serif;
+  --font-ui: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --font-title: 'Pirata One', 'Old English Text MT', serif;
+  font-family: var(--font-ui);
   line-height: 1.5;
   font-weight: 400;
 
